@@ -546,6 +546,7 @@ impl WgpuFrom<SamplerDescriptor> for wgpu::SamplerDescriptor<'_> {
             lod_max_clamp: sampler_descriptor.lod_max_clamp,
             compare: sampler_descriptor.compare_function.map(|c| c.wgpu_into()),
             anisotropy_clamp: sampler_descriptor.anisotropy_clamp,
+            border_color: Default::default(),
         }
     }
 }
