@@ -18,7 +18,9 @@ use bevy_render::{
 use bevy_window::{Window, WindowId};
 use futures_lite::future;
 use std::{borrow::Cow, ops::Range, sync::Arc};
+use std::ops::{RangeBounds, Bound};
 use wgpu::util::DeviceExt;
+use wgpu::BufferSize;
 
 #[derive(Clone)]
 pub struct WgpuRenderResourceContext {
@@ -480,7 +482,23 @@ impl RenderResourceContext for WgpuRenderResourceContext {
                         }
                         RenderResourceBinding::Buffer { buffer, range, .. } => {
                             let wgpu_buffer = buffers.get(&buffer).unwrap();
-                            wgpu::BindingResource::Buffer(wgpu_buffer.slice(range.clone()))
+
+                            let offset = match range.start_bound() {
+                                Bound::Included(&bound) => bound,
+                                Bound::Excluded(&bound) => bound + 1,
+                                Bound::Unbounded => 0,
+                            };
+                            let size = match range.end_bound() {
+                                Bound::Included(&bound) => BufferSize::new(bound + 1 - offset),
+                                Bound::Excluded(&bound) => BufferSize::new(bound - offset),
+                                Bound::Unbounded => None,
+                            };
+
+                            wgpu::BindingResource::Buffer {
+                                buffer: wgpu_buffer,
+                                offset,
+                                size,
+                            }
                         }
                     };
                     wgpu::BindGroupEntry {
