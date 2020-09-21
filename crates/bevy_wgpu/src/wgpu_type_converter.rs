@@ -4,9 +4,9 @@ use bevy_render::{
     pipeline::{
         BindType, BlendDescriptor, BlendFactor, BlendOperation, ColorStateDescriptor, ColorWrite,
         CompareFunction, CullMode, DepthStencilStateDescriptor, FrontFace, IndexFormat,
-        InputStepMode, PrimitiveTopology, RasterizationStateDescriptor, StencilOperation,
-        StencilStateDescriptor, StencilStateFaceDescriptor, VertexAttributeDescriptor,
-        VertexBufferDescriptor, VertexFormat, PolygonMode
+        InputStepMode, PolygonMode, PrimitiveTopology, RasterizationStateDescriptor,
+        StencilOperation, StencilStateDescriptor, StencilStateFaceDescriptor,
+        VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat,
     },
     renderer::BufferUsage,
     texture::{

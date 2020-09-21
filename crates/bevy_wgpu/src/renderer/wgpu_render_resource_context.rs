@@ -17,10 +17,12 @@ use bevy_render::{
 };
 use bevy_window::{Window, WindowId};
 use futures_lite::future;
-use std::{borrow::Cow, ops::Range, sync::Arc};
-use std::ops::{RangeBounds, Bound};
-use wgpu::util::DeviceExt;
-use wgpu::BufferSize;
+use std::{
+    borrow::Cow,
+    ops::{Bound, Range, RangeBounds},
+    sync::Arc,
+};
+use wgpu::{util::DeviceExt, BufferSize};
 
 #[derive(Clone)]
 pub struct WgpuRenderResourceContext {

@@ -2,8 +2,7 @@ use super::{
     state_descriptors::{
         BlendDescriptor, BlendFactor, BlendOperation, ColorStateDescriptor, ColorWrite,
         CompareFunction, CullMode, DepthStencilStateDescriptor, FrontFace, IndexFormat,
-        PrimitiveTopology, RasterizationStateDescriptor, StencilStateFaceDescriptor,
-        PolygonMode,
+        PolygonMode, PrimitiveTopology, RasterizationStateDescriptor, StencilStateFaceDescriptor,
     },
     BindType, DynamicBinding, PipelineLayout, StencilStateDescriptor, VertexBufferDescriptors,
 };

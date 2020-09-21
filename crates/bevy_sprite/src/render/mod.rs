@@ -5,8 +5,8 @@ use bevy_render::{
     pipeline::{
         BlendDescriptor, BlendFactor, BlendOperation, ColorStateDescriptor, ColorWrite,
         CompareFunction, CullMode, DepthStencilStateDescriptor, FrontFace, PipelineDescriptor,
-        RasterizationStateDescriptor, StencilStateDescriptor, StencilStateFaceDescriptor,
-        PolygonMode,
+        PolygonMode, RasterizationStateDescriptor, StencilStateDescriptor,
+        StencilStateFaceDescriptor,
     },
     render_graph::{base, AssetRenderResourcesNode, RenderGraph, RenderResourcesNode},
     shader::{Shader, ShaderStage, ShaderStages},
