@@ -6,7 +6,7 @@ use bevy_render::{
         CompareFunction, CullMode, DepthStencilStateDescriptor, FrontFace, IndexFormat,
         InputStepMode, PrimitiveTopology, RasterizationStateDescriptor, StencilOperation,
         StencilStateDescriptor, StencilStateFaceDescriptor, VertexAttributeDescriptor,
-        VertexBufferDescriptor, VertexFormat,
+        VertexBufferDescriptor, VertexFormat, PolygonMode
     },
     renderer::BufferUsage,
     texture::{
@@ -440,11 +440,22 @@ impl WgpuFrom<CullMode> for wgpu::CullMode {
     }
 }
 
+impl WgpuFrom<PolygonMode> for wgpu::PolygonMode {
+    fn from(val: PolygonMode) -> Self {
+        match val {
+            PolygonMode::Fill => wgpu::PolygonMode::Fill,
+            PolygonMode::Line => wgpu::PolygonMode::Line,
+            PolygonMode::Point => wgpu::PolygonMode::Point,
+        }
+    }
+}
+
 impl WgpuFrom<&RasterizationStateDescriptor> for wgpu::RasterizationStateDescriptor {
     fn from(val: &RasterizationStateDescriptor) -> Self {
         wgpu::RasterizationStateDescriptor {
             front_face: val.front_face.wgpu_into(),
             cull_mode: val.cull_mode.wgpu_into(),
+            polygon_mode: val.polygon_mode.wgpu_into(),
             depth_bias: val.depth_bias,
             depth_bias_slope_scale: val.depth_bias_slope_scale,
             depth_bias_clamp: val.depth_bias_clamp,

@@ -6,6 +6,7 @@ use bevy_render::{
         BlendDescriptor, BlendFactor, BlendOperation, ColorStateDescriptor, ColorWrite,
         CompareFunction, CullMode, DepthStencilStateDescriptor, FrontFace, PipelineDescriptor,
         RasterizationStateDescriptor, StencilStateDescriptor, StencilStateFaceDescriptor,
+        PolygonMode,
     },
     render_graph::{base, AssetRenderResourcesNode, RenderGraph, RenderResourcesNode},
     shader::{Shader, ShaderStage, ShaderStages},
@@ -23,6 +24,7 @@ pub fn build_sprite_sheet_pipeline(shaders: &mut Assets<Shader>) -> PipelineDesc
         rasterization_state: Some(RasterizationStateDescriptor {
             front_face: FrontFace::Ccw,
             cull_mode: CullMode::None,
+            polygon_mode: PolygonMode::Fill,
             depth_bias: 0,
             depth_bias_slope_scale: 0.0,
             depth_bias_clamp: 0.0,
@@ -71,6 +73,7 @@ pub fn build_sprite_pipeline(shaders: &mut Assets<Shader>) -> PipelineDescriptor
         rasterization_state: Some(RasterizationStateDescriptor {
             front_face: FrontFace::Ccw,
             cull_mode: CullMode::None,
+            polygon_mode: PolygonMode::Fill,
             depth_bias: 0,
             depth_bias_slope_scale: 0.0,
             depth_bias_clamp: 0.0,

@@ -99,10 +99,24 @@ impl Default for CullMode {
     }
 }
 
+#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+pub enum PolygonMode {
+    Fill = 0,
+    Line = 1,
+    Point = 2,
+}
+
+impl Default for PolygonMode {
+    fn default() -> Self {
+        PolygonMode::Fill
+    }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct RasterizationStateDescriptor {
     pub front_face: FrontFace,
     pub cull_mode: CullMode,
+    pub polygon_mode: PolygonMode,
     pub depth_bias: i32,
     pub depth_bias_slope_scale: f32,
     pub depth_bias_clamp: f32,

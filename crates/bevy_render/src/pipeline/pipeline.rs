@@ -3,6 +3,7 @@ use super::{
         BlendDescriptor, BlendFactor, BlendOperation, ColorStateDescriptor, ColorWrite,
         CompareFunction, CullMode, DepthStencilStateDescriptor, FrontFace, IndexFormat,
         PrimitiveTopology, RasterizationStateDescriptor, StencilStateFaceDescriptor,
+        PolygonMode,
     },
     BindType, DynamicBinding, PipelineLayout, StencilStateDescriptor, VertexBufferDescriptors,
 };
@@ -74,6 +75,7 @@ impl PipelineDescriptor {
             rasterization_state: Some(RasterizationStateDescriptor {
                 front_face: FrontFace::Ccw,
                 cull_mode: CullMode::Back,
+                polygon_mode: PolygonMode::Fill,
                 depth_bias: 0,
                 depth_bias_slope_scale: 0.0,
                 depth_bias_clamp: 0.0,
