@@ -16,16 +16,11 @@ pub use node::*;
 pub use render::*;
 
 pub mod prelude {
-    pub use crate::{
-        entity::*,
-        node::*,
-        widget::{Button, Text},
-        Anchors, Interaction, Margins,
-    };
+    pub use crate::{entity::*, node::*, widget::Button, Anchors, Interaction, Margins};
 }
 
 use bevy_app::prelude::*;
-use bevy_ecs::IntoQuerySystem;
+use bevy_ecs::{IntoSystem, SystemStage};
 use bevy_render::render_graph::RenderGraph;
 use update::ui_z_system;
 
@@ -39,7 +34,11 @@ pub mod stage {
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<FlexSurface>()
-            .add_stage_before(bevy_app::stage::POST_UPDATE, stage::UI)
+            .add_stage_before(
+                bevy_app::stage::POST_UPDATE,
+                stage::UI,
+                SystemStage::parallel(),
+            )
             .add_system_to_stage(bevy_app::stage::PRE_UPDATE, ui_focus_system.system())
             // add these stages to front because these must run before transform update systems
             .add_system_to_stage(stage::UI, widget::text_system.system())

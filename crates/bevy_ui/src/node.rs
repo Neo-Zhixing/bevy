@@ -1,13 +1,17 @@
 use bevy_math::{Rect, Size, Vec2};
+use bevy_reflect::{Reflect, ReflectComponent, ReflectDeserialize};
 use bevy_render::renderer::RenderResources;
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign};
 
-#[derive(Debug, Clone, Default, RenderResources)]
+#[derive(Debug, Clone, Default, RenderResources, Reflect)]
+#[reflect(Component)]
 pub struct Node {
     pub size: Vec2,
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum Val {
     Undefined,
     Auto,
@@ -44,12 +48,7 @@ impl AddAssign<f32> for Val {
     }
 }
 
-#[derive(Default, Copy, Clone)]
-pub struct CalculatedSize {
-    pub size: Size,
-}
-
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Reflect)]
 pub struct Style {
     pub display: Display,
     pub position_type: PositionType,
@@ -100,7 +99,8 @@ impl Default for Style {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum AlignItems {
     FlexStart,
     FlexEnd,
@@ -115,7 +115,8 @@ impl Default for AlignItems {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum AlignSelf {
     Auto,
     FlexStart,
@@ -131,7 +132,8 @@ impl Default for AlignSelf {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum AlignContent {
     FlexStart,
     FlexEnd,
@@ -147,7 +149,8 @@ impl Default for AlignContent {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum Direction {
     Inherit,
     LTR,
@@ -160,7 +163,8 @@ impl Default for Direction {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum Display {
     Flex,
     None,
@@ -172,7 +176,8 @@ impl Default for Display {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum FlexDirection {
     Row,
     Column,
@@ -186,7 +191,8 @@ impl Default for FlexDirection {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum JustifyContent {
     FlexStart,
     FlexEnd,
@@ -216,7 +222,8 @@ impl Default for JustifyContent {
 //     }
 // }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum PositionType {
     Relative,
     Absolute,
@@ -228,7 +235,8 @@ impl Default for PositionType {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Reflect)]
+#[reflect_value(PartialEq, Serialize, Deserialize)]
 pub enum FlexWrap {
     NoWrap,
     Wrap,
