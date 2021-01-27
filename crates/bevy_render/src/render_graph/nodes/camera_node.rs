@@ -87,7 +87,7 @@ pub fn camera_node_system(
         render_resource_context.map_buffer(staging_buffer, BufferMapMode::Write);
         staging_buffer
     } else {
-        let size = std::mem::size_of::<[[f32; 4]; 4]>();
+        let size = std::mem::size_of::<[[f32; 4]; 4]>() * 2;
         let buffer = render_resource_context.create_buffer(BufferInfo {
             size,
             buffer_usage: BufferUsage::COPY_DST | BufferUsage::UNIFORM,
@@ -117,11 +117,14 @@ pub fn camera_node_system(
     let camera_matrix: [f32; 16] =
         (camera.projection_matrix * global_transform.compute_matrix().inverse()).to_cols_array();
 
+    let transform_matrix: [f32; 16] = global_transform.compute_matrix().to_cols_array();
+
     render_resource_context.write_mapped_buffer(
         staging_buffer,
-        0..matrix_size as u64,
+        0..(matrix_size * 2) as u64,
         &mut |data, _renderer| {
             data[0..matrix_size].copy_from_slice(camera_matrix.as_bytes());
+            data[matrix_size .. (matrix_size * 2)].copy_from_slice(transform_matrix.as_bytes());
         },
     );
     render_resource_context.unmap_buffer(staging_buffer);
@@ -132,6 +135,6 @@ pub fn camera_node_system(
         0,
         camera_buffer,
         0,
-        matrix_size as u64,
+        (matrix_size as u64) * 2,
     );
 }
