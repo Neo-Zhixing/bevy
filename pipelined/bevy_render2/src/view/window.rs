@@ -124,10 +124,10 @@ pub fn prepare_windows(
             });
 
         let swap_chain_descriptor = wgpu::SurfaceConfiguration {
-            format: TextureFormat::bevy_default(),
+            format: TextureFormat::Bgra8Unorm,
             width: window.physical_width,
             height: window.physical_height,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::STORAGE_BINDING,
             present_mode: if window.vsync {
                 wgpu::PresentMode::Fifo
             } else {

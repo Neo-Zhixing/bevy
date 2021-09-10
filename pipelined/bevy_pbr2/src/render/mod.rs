@@ -363,7 +363,7 @@ impl FromWorld for PbrShaders {
                 module: &shader_module,
                 entry_point: "fragment",
                 targets: &[ColorTargetState {
-                    format: TextureFormat::bevy_default(),
+                    format: TextureFormat::Bgra8Unorm,
                     blend: Some(BlendState {
                         color: BlendComponent {
                             src_factor: BlendFactor::SrcAlpha,
