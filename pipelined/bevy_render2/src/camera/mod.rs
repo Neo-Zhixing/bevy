@@ -61,15 +61,16 @@ fn extract_cameras(
     mut commands: Commands,
     active_cameras: Res<ActiveCameras>,
     windows: Res<Windows>,
-    query: Query<(Entity, &Camera, &GlobalTransform)>,
+    query: Query<(Entity, &Camera, &GlobalTransform, Option<&PerspectiveProjection>, Option<&OrthographicProjection>)>,
 ) {
     let mut entities = HashMap::default();
     for camera in active_cameras.iter() {
         let name = &camera.name;
-        if let Some((entity, camera, transform)) = camera.entity.and_then(|e| query.get(e).ok()) {
+        if let Some((entity, camera, transform, perspective_projection, orthographic_projection)) = camera.entity.and_then(|e| query.get(e).ok()) {
             entities.insert(name.clone(), entity);
             if let Some(window) = windows.get(camera.window) {
-                commands.get_or_spawn(entity).insert_bundle((
+                let mut camera_commands = commands.get_or_spawn(entity);
+                camera_commands.insert_bundle((
                     ExtractedCamera {
                         window_id: camera.window,
                         name: camera.name.clone(),
@@ -81,6 +82,12 @@ fn extract_cameras(
                         height: window.physical_height().max(1),
                     },
                 ));
+                if let Some(projection) = perspective_projection {
+                    camera_commands.insert(projection.clone());
+                }
+                if let Some(projection) = orthographic_projection {
+                    camera_commands.insert(projection.clone());
+                }
             }
         }
     }
