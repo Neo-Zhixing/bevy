@@ -17,7 +17,13 @@ impl Texture {
     }
 
     pub fn create_view(&self, desc: &wgpu::TextureViewDescriptor) -> TextureView {
-        TextureView::from(self.value.create_view(desc))
+        TextureView {
+            id: TextureViewId(Uuid::new_v4()),
+            value: TextureViewValue::TextureView {
+                view: Arc::new(self.value.create_view(desc)),
+                texture: self.value.clone(),
+            },
+        }
     }
 }
 
@@ -44,7 +50,10 @@ pub struct TextureViewId(Uuid);
 
 #[derive(Clone, Debug)]
 pub enum TextureViewValue {
-    TextureView(Arc<wgpu::TextureView>),
+    TextureView {
+        view: Arc<wgpu::TextureView>,
+        texture: Arc<wgpu::Texture>,
+    },
     SurfaceTexture {
         // NOTE: The order of these fields is important because the view must be dropped before the
         // frame is dropped
@@ -68,17 +77,15 @@ impl TextureView {
     #[inline]
     pub fn take_surface_texture(self) -> Option<wgpu::SurfaceTexture> {
         match self.value {
-            TextureViewValue::TextureView(_) => None,
+            TextureViewValue::TextureView { .. } => None,
             TextureViewValue::SurfaceTexture { texture, .. } => Arc::try_unwrap(texture).ok(),
         }
     }
-}
 
-impl From<wgpu::TextureView> for TextureView {
-    fn from(value: wgpu::TextureView) -> Self {
-        TextureView {
-            id: TextureViewId(Uuid::new_v4()),
-            value: TextureViewValue::TextureView(Arc::new(value)),
+    pub fn get_texture(&self) -> &wgpu::Texture {
+        match &self.value {
+            TextureViewValue::TextureView { texture, .. } => &texture,
+            TextureViewValue::SurfaceTexture { texture, .. } => &texture.texture,
         }
     }
 }
@@ -101,7 +108,7 @@ impl Deref for TextureView {
     #[inline]
     fn deref(&self) -> &Self::Target {
         match &self.value {
-            TextureViewValue::TextureView(value) => value,
+            TextureViewValue::TextureView { view, .. } => view,
             TextureViewValue::SurfaceTexture { view, .. } => view,
         }
     }
