@@ -299,7 +299,7 @@ fn prepare_view_targets(
                 let main_texture_format = if view.hdr {
                     ViewTarget::TEXTURE_FORMAT_HDR
                 } else {
-                    TextureFormat::bevy_default()
+                    TextureFormat::Rgba8Unorm
                 };
 
                 let main_textures = textures
@@ -313,7 +313,7 @@ fn prepare_view_targets(
                             dimension: TextureDimension::D2,
                             format: main_texture_format,
                             usage: TextureUsages::RENDER_ATTACHMENT
-                                | TextureUsages::TEXTURE_BINDING,
+                                | TextureUsages::TEXTURE_BINDING| TextureUsages::STORAGE_BINDING,
                         };
                         MainTargetTextures {
                             a: texture_cache
