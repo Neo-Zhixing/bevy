@@ -11,6 +11,8 @@ use crate::{
     system::{BoxedSystem, IntoSystem, System},
 };
 
+use super::ScheduleBuildPass;
+
 fn new_condition<M>(condition: impl Condition<M>) -> BoxedCondition {
     let condition_system = IntoSystem::into_system(condition);
     assert!(
@@ -139,33 +141,17 @@ impl<T> NodeConfigs<T> {
         }
     }
 
-    fn before_ignore_deferred_inner(&mut self, set: InternedSystemSet) {
+    fn with_dependency_option_inner<P: ScheduleBuildPass>(&mut self, option: P::EdgeOptions) {
         match self {
             Self::NodeConfig(config) => {
-                config.graph_info.dependencies.push(
-                    Dependency::new(DependencyKind::Before, set)
-                        .add_config::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                let last_pass = config.graph_info.dependencies.last_mut().expect(
+                    "`before` or `after` must be called prior to `with_dependency_option`"
                 );
+                last_pass.add_config::<P>(option);
             }
             Self::Configs { configs, .. } => {
                 for config in configs {
-                    config.before_ignore_deferred_inner(set.intern());
-                }
-            }
-        }
-    }
-
-    fn after_ignore_deferred_inner(&mut self, set: InternedSystemSet) {
-        match self {
-            Self::NodeConfig(config) => {
-                config.graph_info.dependencies.push(
-                    Dependency::new(DependencyKind::After, set)
-                        .add_config::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
-                );
-            }
-            Self::Configs { configs, .. } => {
-                for config in configs {
-                    config.after_ignore_deferred_inner(set.intern());
+                    config.with_dependency_option_inner::<P>(option.clone());
                 }
             }
         }
@@ -333,16 +319,8 @@ where
     ///
     /// Unlike [`before`](Self::before), this will not cause the systems in
     /// `set` to wait for the deferred effects of `self` to be applied.
-    fn before_ignore_deferred<M>(self, set: impl IntoSystemSet<M>) -> SystemConfigs {
-        self.into_configs().before_ignore_deferred(set)
-    }
-
-    /// Run after all systems in `set`.
-    ///
-    /// Unlike [`after`](Self::after), this will not wait for the deferred
-    /// effects of systems in `set` to be applied.
-    fn after_ignore_deferred<M>(self, set: impl IntoSystemSet<M>) -> SystemConfigs {
-        self.into_configs().after_ignore_deferred(set)
+    fn with_dependency_option<P: ScheduleBuildPass>(self, option: P::EdgeOptions) -> SystemConfigs {
+        self.into_configs().with_dependency_option::<P>(option)
     }
 
     /// Add a run condition to each contained system.
@@ -475,15 +453,8 @@ impl IntoSystemConfigs<()> for SystemConfigs {
         self
     }
 
-    fn before_ignore_deferred<M>(mut self, set: impl IntoSystemSet<M>) -> Self {
-        let set = set.into_system_set();
-        self.before_ignore_deferred_inner(set.intern());
-        self
-    }
-
-    fn after_ignore_deferred<M>(mut self, set: impl IntoSystemSet<M>) -> Self {
-        let set = set.into_system_set();
-        self.after_ignore_deferred_inner(set.intern());
+    fn with_dependency_option<P: ScheduleBuildPass>(mut self, option: P::EdgeOptions) -> SystemConfigs {
+        self.with_dependency_option_inner::<P>(option);
         self
     }
 
@@ -602,16 +573,8 @@ where
     ///
     /// Unlike [`before`](Self::before), this will not cause the systems in `set` to wait for the
     /// deferred effects of `self` to be applied.
-    fn before_ignore_deferred<M>(self, set: impl IntoSystemSet<M>) -> SystemSetConfigs {
-        self.into_configs().before_ignore_deferred(set)
-    }
-
-    /// Run after all systems in `set`.
-    ///
-    /// Unlike [`after`](Self::after), this may not see the deferred
-    /// effects of systems in `set` to be applied.
-    fn after_ignore_deferred<M>(self, set: impl IntoSystemSet<M>) -> SystemSetConfigs {
-        self.into_configs().after_ignore_deferred(set)
+    fn with_dependency_option<P: ScheduleBuildPass>(self, option: P::EdgeOptions) -> SystemSetConfigs {
+        self.into_configs().with_dependency_option::<P>(option)
     }
 
     /// Run the systems in this set(s) only if the [`Condition`] is `true`.
@@ -681,17 +644,8 @@ impl IntoSystemSetConfigs for SystemSetConfigs {
         self
     }
 
-    fn before_ignore_deferred<M>(mut self, set: impl IntoSystemSet<M>) -> Self {
-        let set = set.into_system_set();
-        self.before_ignore_deferred_inner(set.intern());
-
-        self
-    }
-
-    fn after_ignore_deferred<M>(mut self, set: impl IntoSystemSet<M>) -> Self {
-        let set = set.into_system_set();
-        self.after_ignore_deferred_inner(set.intern());
-
+    fn with_dependency_option<P: ScheduleBuildPass>(mut self, option: P::EdgeOptions) -> SystemSetConfigs {
+        self.with_dependency_option_inner::<P>(option);
         self
     }
 
