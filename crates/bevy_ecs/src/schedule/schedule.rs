@@ -1947,8 +1947,8 @@ mod tests {
         self as bevy_ecs,
         prelude::{Res, Resource},
         schedule::{
-            IntoSystemConfigs, IntoSystemSetConfigs, Schedule, ScheduleBuildSettings, SystemSet,
             auto_insert_apply_deferred::{AutoInsertApplyDeferredPass, IgnoreDeferred},
+            IntoSystemConfigs, IntoSystemSetConfigs, Schedule, ScheduleBuildSettings, SystemSet,
         },
         system::Commands,
         world::World,
@@ -2099,7 +2099,9 @@ mod tests {
             check_no_sync_edges(|schedule| {
                 schedule.add_systems((
                     insert_resource,
-                    resource_does_not_exist.after(insert_resource).with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    resource_does_not_exist
+                        .after(insert_resource)
+                        .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 ));
             });
         }
@@ -2108,7 +2110,9 @@ mod tests {
         fn system_to_system_before() {
             check_no_sync_edges(|schedule| {
                 schedule.add_systems((
-                    insert_resource.before(resource_does_not_exist).with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    insert_resource
+                        .before(resource_does_not_exist)
+                        .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                     resource_does_not_exist,
                 ));
             });
@@ -2119,7 +2123,11 @@ mod tests {
             check_no_sync_edges(|schedule| {
                 schedule
                     .add_systems((insert_resource, resource_does_not_exist.in_set(Sets::A)))
-                    .configure_sets(Sets::A.after(insert_resource).with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred));
+                    .configure_sets(
+                        Sets::A
+                            .after(insert_resource)
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    );
             });
         }
 
@@ -2128,7 +2136,11 @@ mod tests {
             check_no_sync_edges(|schedule| {
                 schedule
                     .add_systems((insert_resource.in_set(Sets::A), resource_does_not_exist))
-                    .configure_sets(Sets::A.before(resource_does_not_exist).with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred));
+                    .configure_sets(
+                        Sets::A
+                            .before(resource_does_not_exist)
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    );
             });
         }
 
@@ -2140,7 +2152,11 @@ mod tests {
                         insert_resource.in_set(Sets::A),
                         resource_does_not_exist.in_set(Sets::B),
                     ))
-                    .configure_sets(Sets::B.after(Sets::A).with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred));
+                    .configure_sets(
+                        Sets::B
+                            .after(Sets::A)
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    );
             });
         }
 
@@ -2152,18 +2168,22 @@ mod tests {
                         insert_resource.in_set(Sets::A),
                         resource_does_not_exist.in_set(Sets::B),
                     ))
-                    .configure_sets(Sets::A.before(Sets::B).with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred));
+                    .configure_sets(
+                        Sets::A
+                            .before(Sets::B)
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    );
             });
         }
 
         #[test]
-        #[should_panic(expected = "`before` or `after` must be called prior to `with_dependency_option`")]
+        #[should_panic(
+            expected = "`before` or `after` must be called prior to `with_dependency_option`"
+        )]
         fn panic_on_dangling_dependency_option() {
             let mut schedule = Schedule::default();
-            schedule
-            .add_systems((
-                insert_resource.with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
-            ));
+            schedule.add_systems((insert_resource
+                .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),));
         }
     }
 

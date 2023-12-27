@@ -144,9 +144,10 @@ impl<T> NodeConfigs<T> {
     fn with_dependency_option_inner<P: ScheduleBuildPass>(&mut self, option: P::EdgeOptions) {
         match self {
             Self::NodeConfig(config) => {
-                let last_pass = config.graph_info.dependencies.last_mut().expect(
-                    "`before` or `after` must be called prior to `with_dependency_option`"
-                );
+                let last_pass =
+                    config.graph_info.dependencies.last_mut().expect(
+                        "`before` or `after` must be called prior to `with_dependency_option`",
+                    );
                 last_pass.add_config::<P>(option);
             }
             Self::Configs { configs, .. } => {
@@ -453,7 +454,10 @@ impl IntoSystemConfigs<()> for SystemConfigs {
         self
     }
 
-    fn with_dependency_option<P: ScheduleBuildPass>(mut self, option: P::EdgeOptions) -> SystemConfigs {
+    fn with_dependency_option<P: ScheduleBuildPass>(
+        mut self,
+        option: P::EdgeOptions,
+    ) -> SystemConfigs {
         self.with_dependency_option_inner::<P>(option);
         self
     }
@@ -573,7 +577,10 @@ where
     ///
     /// Unlike [`before`](Self::before), this will not cause the systems in `set` to wait for the
     /// deferred effects of `self` to be applied.
-    fn with_dependency_option<P: ScheduleBuildPass>(self, option: P::EdgeOptions) -> SystemSetConfigs {
+    fn with_dependency_option<P: ScheduleBuildPass>(
+        self,
+        option: P::EdgeOptions,
+    ) -> SystemSetConfigs {
         self.into_configs().with_dependency_option::<P>(option)
     }
 
@@ -644,7 +651,10 @@ impl IntoSystemSetConfigs for SystemSetConfigs {
         self
     }
 
-    fn with_dependency_option<P: ScheduleBuildPass>(mut self, option: P::EdgeOptions) -> SystemSetConfigs {
+    fn with_dependency_option<P: ScheduleBuildPass>(
+        mut self,
+        option: P::EdgeOptions,
+    ) -> SystemSetConfigs {
         self.with_dependency_option_inner::<P>(option);
         self
     }
