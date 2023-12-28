@@ -337,10 +337,9 @@ where
         self.into_configs().after(set)
     }
 
-    /// Run before all systems in `set`.
+    /// Apply dependency option to the last added dependency.
     ///
-    /// Unlike [`before`](Self::before), this will not cause the systems in
-    /// `set` to wait for the deferred effects of `self` to be applied.
+    /// Must be called after [`before`](Self::before) or [`after`](Self::after).
     fn with_dependency_option<P: ScheduleBuildPass>(self, option: P::EdgeOptions) -> SystemConfigs {
         self.into_configs().with_dependency_option::<P>(option)
     }
