@@ -1,10 +1,7 @@
-use std::option;
-
 use bevy_utils::all_tuples;
 
 use crate::{
     schedule::{
-        auto_insert_apply_deferred::{AutoInsertApplyDeferredPass, IgnoreDeferred},
         condition::{BoxedCondition, Condition},
         graph_utils::{Ambiguity, Dependency, DependencyKind, GraphInfo},
         set::{InternedSystemSet, IntoSystemSet, SystemSet},
@@ -143,7 +140,10 @@ impl<T> NodeConfigs<T> {
         }
     }
 
-    fn with_dependency_option_inner<P: ScheduleBuildPass>(&mut self, option: P::EdgeOptions) -> Option<&Dependency> {
+    fn with_dependency_option_inner<P: ScheduleBuildPass>(
+        &mut self,
+        option: P::EdgeOptions,
+    ) -> Option<&Dependency> {
         match self {
             Self::NodeConfig(config) => {
                 let last_pass =
