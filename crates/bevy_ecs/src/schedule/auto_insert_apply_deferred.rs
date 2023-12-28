@@ -32,6 +32,7 @@ pub struct AutoInsertApplyDeferredPass {
 }
 
 /// If added to a dependency edge, the edge will not be considered for auto sync point insertions.
+#[derive(Clone)]
 pub struct IgnoreDeferred;
 
 impl AutoInsertApplyDeferredPass {

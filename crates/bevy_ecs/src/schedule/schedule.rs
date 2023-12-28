@@ -1818,7 +1818,7 @@ pub enum LogLevel {
 /// A pass for modular modification of the dependency graph.
 pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
     /// Custom options for dependencies between sets or systems.
-    type EdgeOptions: 'static;
+    type EdgeOptions: Clone + 'static;
 
     /// Called when a dependency between sets or systems was explicitly added to the graph.
     fn add_dependency(&mut self, from: NodeId, to: NodeId, options: Option<&Self::EdgeOptions>);
@@ -1947,6 +1947,7 @@ mod tests {
         self as bevy_ecs,
         prelude::{Res, Resource},
         schedule::{
+            auto_insert_apply_deferred::{AutoInsertApplyDeferredPass, IgnoreDeferred},
             IntoSystemConfigs, IntoSystemSetConfigs, Schedule, ScheduleBuildSettings, SystemSet,
         },
         system::Commands,
@@ -2098,7 +2099,9 @@ mod tests {
             check_no_sync_edges(|schedule| {
                 schedule.add_systems((
                     insert_resource,
-                    resource_does_not_exist.after_ignore_deferred(insert_resource),
+                    resource_does_not_exist
+                        .after(insert_resource)
+                        .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 ));
             });
         }
@@ -2107,7 +2110,9 @@ mod tests {
         fn system_to_system_before() {
             check_no_sync_edges(|schedule| {
                 schedule.add_systems((
-                    insert_resource.before_ignore_deferred(resource_does_not_exist),
+                    insert_resource
+                        .before(resource_does_not_exist)
+                        .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                     resource_does_not_exist,
                 ));
             });
@@ -2118,7 +2123,11 @@ mod tests {
             check_no_sync_edges(|schedule| {
                 schedule
                     .add_systems((insert_resource, resource_does_not_exist.in_set(Sets::A)))
-                    .configure_sets(Sets::A.after_ignore_deferred(insert_resource));
+                    .configure_sets(
+                        Sets::A
+                            .after(insert_resource)
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    );
             });
         }
 
@@ -2127,7 +2136,11 @@ mod tests {
             check_no_sync_edges(|schedule| {
                 schedule
                     .add_systems((insert_resource.in_set(Sets::A), resource_does_not_exist))
-                    .configure_sets(Sets::A.before_ignore_deferred(resource_does_not_exist));
+                    .configure_sets(
+                        Sets::A
+                            .before(resource_does_not_exist)
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    );
             });
         }
 
@@ -2139,7 +2152,11 @@ mod tests {
                         insert_resource.in_set(Sets::A),
                         resource_does_not_exist.in_set(Sets::B),
                     ))
-                    .configure_sets(Sets::B.after_ignore_deferred(Sets::A));
+                    .configure_sets(
+                        Sets::B
+                            .after(Sets::A)
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    );
             });
         }
 
@@ -2151,8 +2168,39 @@ mod tests {
                         insert_resource.in_set(Sets::A),
                         resource_does_not_exist.in_set(Sets::B),
                     ))
-                    .configure_sets(Sets::A.before_ignore_deferred(Sets::B));
+                    .configure_sets(
+                        Sets::A
+                            .before(Sets::B)
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    );
             });
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "`before` or `after` must be called prior to `with_dependency_option`"
+        )]
+        fn panic_on_dangling_dependency_option() {
+            let mut schedule = Schedule::default();
+            schedule.add_systems(
+                insert_resource
+                    .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+            );
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "`before` or `after` must be called prior to `with_dependency_option`"
+        )]
+        fn panic_on_dangling_group_dependency_option() {
+            let mut schedule = Schedule::default();
+            schedule.add_systems(
+                (
+                    insert_resource.before(resource_does_not_exist),
+                    resource_does_not_exist.after(insert_resource),
+                )
+                    .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+            );
         }
     }
 
@@ -2220,7 +2268,8 @@ mod tests {
                             },
                         ),
                     )
-                        .chain_ignore_deferred(),
+                        .chain()
+                        .with_chain_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 );
             });
         }
@@ -2275,7 +2324,8 @@ mod tests {
                             },
                         ),
                     )
-                        .chain_ignore_deferred(),
+                        .chain()
+                        .with_chain_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 );
             });
         }
@@ -2336,7 +2386,8 @@ mod tests {
                         )
                             .chain(),
                     )
-                        .chain_ignore_deferred(),
+                        .chain()
+                        .with_chain_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 );
             });
         }
@@ -2405,7 +2456,8 @@ mod tests {
                         )
                             .chain(),
                     )
-                        .chain_ignore_deferred(),
+                        .chain()
+                        .with_chain_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 );
             });
         }
