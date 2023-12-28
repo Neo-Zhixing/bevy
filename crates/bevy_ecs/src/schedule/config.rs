@@ -1,3 +1,5 @@
+use std::option;
+
 use bevy_utils::all_tuples;
 
 use crate::{
@@ -227,21 +229,17 @@ impl<T> NodeConfigs<T> {
         self
     }
 
-    fn chain_ignore_deferred_inner(mut self) -> Self {
-        match &mut self {
+    fn with_chain_option_inner<P: ScheduleBuildPass>(&mut self, option: P::EdgeOptions) {
+        match self {
             Self::NodeConfig(_) => { /* no op */ }
             Self::Configs { chained, .. } => {
-                if matches!(chained, Chain::Unchained) {
-                    *chained = Chain::Chained(Default::default());
-                };
                 if let Chain::Chained(config) = chained {
-                    config.add_edge_config::<AutoInsertApplyDeferredPass>(IgnoreDeferred);
+                    config.add_edge_config::<P>(option);
                 } else {
-                    unreachable!()
+                    panic!("`with_chain_option` must be called after `chain`");
                 };
             }
         }
-        self
     }
 }
 
@@ -410,7 +408,7 @@ where
     ///
     /// If the preceeding node on a edge has deferred parameters, a [`apply_deferred`](crate::schedule::apply_deferred)
     /// will be inserted on the edge. If this behavior is not desired consider using
-    /// [`chain_ignore_deferred`](Self::chain_ignore_deferred) instead.
+    /// [`with_chain_options`](Self::with_chain_options) to disable this behavior.
     fn chain(self) -> SystemConfigs {
         self.into_configs().chain()
     }
@@ -420,8 +418,8 @@ where
     /// Ordering constraints will be applied between the successive elements.
     ///
     /// Unlike [`chain`](Self::chain) this will **not** add [`apply_deferred`](crate::schedule::apply_deferred) on the edges.
-    fn chain_ignore_deferred(self) -> SystemConfigs {
-        self.into_configs().chain_ignore_deferred()
+    fn with_chain_option<P: ScheduleBuildPass>(mut self, option: P::EdgeOptions) -> SystemConfigs {
+        self.into_configs().with_chain_option::<P>(option)
     }
 }
 
@@ -487,8 +485,9 @@ impl IntoSystemConfigs<()> for SystemConfigs {
         self.chain_inner()
     }
 
-    fn chain_ignore_deferred(self) -> Self {
-        self.chain_ignore_deferred_inner()
+    fn with_chain_option<P: ScheduleBuildPass>(mut self, option: P::EdgeOptions) -> SystemConfigs {
+        self.with_chain_option_inner::<P>(option);
+        self
     }
 }
 
@@ -573,10 +572,9 @@ where
         self.into_configs().after(set)
     }
 
-    /// Run before all systems in `set`.
+    /// Apply dependency option to the last added dependency.
     ///
-    /// Unlike [`before`](Self::before), this will not cause the systems in `set` to wait for the
-    /// deferred effects of `self` to be applied.
+    /// Must be called after [`before`](Self::before) or [`after`](Self::after).
     fn with_dependency_option<P: ScheduleBuildPass>(
         self,
         option: P::EdgeOptions,
@@ -611,13 +609,10 @@ where
         self.into_configs().chain()
     }
 
-    /// Treat this collection as a sequence of systems.
-    ///
-    /// Ordering constraints will be applied between the successive elements.
-    ///
-    /// Unlike [`chain`](Self::chain) this will **not** add [`apply_deferred`](crate::schedule::apply_deferred) on the edges.
-    fn chain_ignore_deferred(self) -> SystemConfigs {
-        self.into_configs().chain_ignore_deferred()
+    /// Apply dependency option to all dependencies between this sequence of system sets.
+    /// Must be called after [`chain`](Self::chain).
+    fn with_chain_option<P: ScheduleBuildPass>(self, option: P::EdgeOptions) -> SystemSetConfigs {
+        self.into_configs().with_chain_option::<P>(option)
     }
 }
 
@@ -680,6 +675,11 @@ impl IntoSystemSetConfigs for SystemSetConfigs {
 
     fn chain(self) -> Self {
         self.chain_inner()
+    }
+
+    fn with_chain_option<P: ScheduleBuildPass>(mut self, option: P::EdgeOptions) -> Self {
+        self.with_chain_option_inner::<P>(option);
+        self
     }
 }
 

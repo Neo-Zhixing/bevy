@@ -2251,7 +2251,8 @@ mod tests {
                             },
                         ),
                     )
-                        .chain_ignore_deferred(),
+                        .chain()
+                        .with_chain_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 );
             });
         }
@@ -2306,7 +2307,8 @@ mod tests {
                             },
                         ),
                     )
-                        .chain_ignore_deferred(),
+                        .chain()
+                        .with_chain_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 );
             });
         }
@@ -2367,7 +2369,8 @@ mod tests {
                         )
                             .chain(),
                     )
-                        .chain_ignore_deferred(),
+                        .chain()
+                        .with_chain_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 );
             });
         }
@@ -2436,7 +2439,8 @@ mod tests {
                         )
                             .chain(),
                     )
-                        .chain_ignore_deferred(),
+                        .chain()
+                        .with_chain_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
                 );
             });
         }
