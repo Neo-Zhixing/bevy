@@ -182,6 +182,14 @@ impl ConfigMap {
     pub fn get_edge_config<T: ScheduleBuildPass>(&self) -> Option<&T::EdgeOptions> {
         self.0.get(&TypeId::of::<T>())?.downcast_ref()
     }
+    /// Add a dependency config to all dependencies established by chain T.
+    pub fn add_node_config<T: ScheduleBuildPass>(&mut self, option: T::NodeOptions) {
+        self.0.insert(TypeId::of::<T>(), Box::new(option));
+    }
+    /// Get the dependency config established by the chain T.
+    pub fn get_node_config<T: ScheduleBuildPass>(&self) -> Option<&T::NodeOptions> {
+        self.0.get(&TypeId::of::<T>())?.downcast_ref()
+    }
 }
 
 /// A collection of systems, and the metadata and executor needed to run them
@@ -822,7 +830,9 @@ impl ScheduleGraph {
             node: set,
             graph_info,
             mut conditions,
+            config,
         } = set;
+        // TODO: configure systems using config
 
         let id = match self.system_set_ids.get(&set) {
             Some(&id) => id,
@@ -1819,6 +1829,8 @@ pub enum LogLevel {
 pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
     /// Custom options for dependencies between sets or systems.
     type EdgeOptions: Clone + 'static;
+    /// Custom options for individual systems.
+    type NodeOptions: Clone + 'static;
 
     /// Called when a dependency between sets or systems was explicitly added to the graph.
     fn add_dependency(&mut self, from: NodeId, to: NodeId, options: Option<&Self::EdgeOptions>);

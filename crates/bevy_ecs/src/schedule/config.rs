@@ -10,7 +10,7 @@ use crate::{
     system::{BoxedSystem, IntoSystem, System},
 };
 
-use super::ScheduleBuildPass;
+use super::{ConfigMap, ScheduleBuildPass};
 
 fn new_condition<M>(condition: impl Condition<M>) -> BoxedCondition {
     let condition_system = IntoSystem::into_system(condition);
@@ -53,6 +53,7 @@ impl IntoSystemConfigs<()> for BoxedSystem<(), ()> {
 /// Stores configuration for a single generic node.
 pub struct NodeConfig<T> {
     pub(crate) node: T,
+    pub(crate) config: ConfigMap,
     pub(crate) graph_info: GraphInfo,
     pub(crate) conditions: Vec<BoxedCondition>,
 }
@@ -84,6 +85,7 @@ impl SystemConfigs {
         let sets = system.default_system_sets().into_iter().collect();
         Self::NodeConfig(SystemConfig {
             node: system,
+            config: ConfigMap::default(),
             graph_info: GraphInfo {
                 sets,
                 ..Default::default()
@@ -135,6 +137,19 @@ impl<T> NodeConfigs<T> {
             Self::Configs { configs, .. } => {
                 for config in configs {
                     config.after_inner(set);
+                }
+            }
+        }
+    }
+
+    fn with_option_inner<P: ScheduleBuildPass>(&mut self, option: P::NodeOptions) {
+        match self {
+            Self::NodeConfig(config) => {
+                config.config.add_node_config::<P>(option);
+            }
+            Self::Configs { configs, .. } => {
+                for config in configs {
+                    config.with_option_inner::<P>(option.clone());
                 }
             }
         }
@@ -337,6 +352,11 @@ where
         self.into_configs().after(set)
     }
 
+    /// Apply option to the current systems.
+    fn with_option<P: ScheduleBuildPass>(self, option: P::NodeOptions) -> SystemConfigs {
+        self.into_configs().with_option::<P>(option)
+    }
+
     /// Apply dependency option to the last added dependency.
     ///
     /// Must be called after [`before`](Self::before) or [`after`](Self::after).
@@ -474,6 +494,11 @@ impl IntoSystemConfigs<()> for SystemConfigs {
         self
     }
 
+    fn with_option<P: ScheduleBuildPass>(mut self, option: P::NodeOptions) -> SystemConfigs {
+        self.with_option_inner::<P>(option);
+        self
+    }
+
     fn with_dependency_option<P: ScheduleBuildPass>(
         mut self,
         option: P::EdgeOptions,
@@ -552,6 +577,7 @@ impl SystemSetConfig {
 
         Self {
             node: set,
+            config: ConfigMap::default(),
             graph_info: GraphInfo::default(),
             conditions: Vec::new(),
         }
@@ -592,6 +618,11 @@ where
     /// this isn't desired, use [`after_ignore_deferred`](Self::after_ignore_deferred) instead.
     fn after<M>(self, set: impl IntoSystemSet<M>) -> SystemSetConfigs {
         self.into_configs().after(set)
+    }
+
+    /// Apply option to the current systems.
+    fn with_option<P: ScheduleBuildPass>(self, option: P::NodeOptions) -> SystemSetConfigs {
+        self.into_configs().with_option::<P>(option)
     }
 
     /// Apply dependency option to the last added dependency.
@@ -665,6 +696,11 @@ impl IntoSystemSetConfigs for SystemSetConfigs {
         let set = set.into_system_set();
         self.after_inner(set.intern());
 
+        self
+    }
+
+    fn with_option<P: ScheduleBuildPass>(mut self, option: P::NodeOptions) -> SystemSetConfigs {
+        self.with_option_inner::<P>(option);
         self
     }
 
