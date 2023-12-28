@@ -2180,10 +2180,21 @@ mod tests {
         #[should_panic(
             expected = "`before` or `after` must be called prior to `with_dependency_option`"
         )]
-        fn panic_on_dangling_dependency_option() {
+        fn panic_on_dangling_dependency_option() {            let mut schedule = Schedule::default();
+            schedule.add_systems(insert_resource
+                .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred));
+        }
+
+        #[test]
+        #[should_panic(
+            expected = "`before` or `after` must be called prior to `with_dependency_option`"
+        )]
+        fn panic_on_dangling_group_dependency_option() {
             let mut schedule = Schedule::default();
-            schedule.add_systems((insert_resource
-                .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),));
+            schedule.add_systems((
+                insert_resource.before(resource_does_not_exist),
+                resource_does_not_exist.after(insert_resource),
+            ).with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred));
         }
     }
 

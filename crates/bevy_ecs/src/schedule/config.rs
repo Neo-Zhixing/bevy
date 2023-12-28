@@ -143,7 +143,7 @@ impl<T> NodeConfigs<T> {
         }
     }
 
-    fn with_dependency_option_inner<P: ScheduleBuildPass>(&mut self, option: P::EdgeOptions) {
+    fn with_dependency_option_inner<P: ScheduleBuildPass>(&mut self, option: P::EdgeOptions) -> Option<&Dependency> {
         match self {
             Self::NodeConfig(config) => {
                 let last_pass =
@@ -151,11 +151,34 @@ impl<T> NodeConfigs<T> {
                         "`before` or `after` must be called prior to `with_dependency_option`",
                     );
                 last_pass.add_config::<P>(option);
+                Some(last_pass)
             }
             Self::Configs { configs, .. } => {
+                let mut dependency: Option<&Dependency> = None;
+                // While iterating through the config list, we check to ensure that the
+                // last dependency added to each config is the same.
+                // This is to reject situations like this:
+                // ```
+                // schedule.add_systems((
+                //     system_a.before(xxx),
+                //     system_b.after(yyyy)
+                // ).with_dependency_option::<P>(zzz));
+                // ```
+
                 for config in configs {
-                    config.with_dependency_option_inner::<P>(option.clone());
+                    let dependency2 = config.with_dependency_option_inner::<P>(option.clone());
+                    if let Some(dependency2) = dependency2 {
+                        if let Some(dependency) = dependency {
+                            assert!(
+                                dependency.set == dependency2.set && dependency.kind == dependency2.kind,
+                                "`before` or `after` must be called prior to `with_dependency_option`"
+                            );
+                        } else {
+                            dependency = Some(dependency2);
+                        }
+                    }
                 }
+                dependency
             }
         }
     }
@@ -418,7 +441,7 @@ where
     /// Ordering constraints will be applied between the successive elements.
     ///
     /// Unlike [`chain`](Self::chain) this will **not** add [`apply_deferred`](crate::schedule::apply_deferred) on the edges.
-    fn with_chain_option<P: ScheduleBuildPass>(mut self, option: P::EdgeOptions) -> SystemConfigs {
+    fn with_chain_option<P: ScheduleBuildPass>(self, option: P::EdgeOptions) -> SystemConfigs {
         self.into_configs().with_chain_option::<P>(option)
     }
 }
