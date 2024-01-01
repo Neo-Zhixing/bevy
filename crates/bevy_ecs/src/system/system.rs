@@ -1,8 +1,9 @@
 use bevy_utils::tracing::warn;
+use bevy_utils::ConfigMap;
 use core::fmt::Debug;
 
 use crate::component::Tick;
-use crate::schedule::{InternedSystemSet, ConfigMap};
+use crate::schedule::{InternedSystemSet};
 use crate::world::unsafe_world_cell::UnsafeWorldCell;
 use crate::{archetype::ArchetypeComponentId, component::ComponentId, query::Access, world::World};
 
@@ -100,8 +101,8 @@ pub trait System: Send + Sync + 'static {
     }
 
     /// Returns the system's default [`ConfigMap`].
-    fn default_configs(&self) -> ConfigMap {
-        ConfigMap::default()
+    fn default_configs(&self) -> Option<&ConfigMap> {
+        None
     }
 
     /// Gets the tick indicating the last time this system ran.

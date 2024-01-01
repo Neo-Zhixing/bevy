@@ -13,6 +13,7 @@ use bevy_utils::{
     thiserror::Error,
     tracing::{error, warn},
     HashMap, HashSet,
+    ConfigMap,
 };
 
 use fixedbitset::FixedBitSet;
@@ -168,28 +169,6 @@ pub enum Chain {
     /// Systems are chained. `before -> after` ordering constraints
     /// will be added between the successive elements.
     Chained(ConfigMap),
-}
-
-/// Option maps for [`ScheduleBuildPass`]
-#[derive(Default)]
-pub struct ConfigMap(BTreeMap<TypeId, Box<dyn Any>>);
-impl ConfigMap {
-    /// Add a dependency config to all dependencies established by chain T.
-    pub fn add_edge_config<T: ScheduleBuildPass>(&mut self, option: T::EdgeOptions) {
-        self.0.insert(TypeId::of::<T>(), Box::new(option));
-    }
-    /// Get the dependency config established by the chain T.
-    pub fn get_edge_config<T: ScheduleBuildPass>(&self) -> Option<&T::EdgeOptions> {
-        self.0.get(&TypeId::of::<T>())?.downcast_ref()
-    }
-    /// Add a dependency config to all dependencies established by chain T.
-    pub fn add_node_config<T: ScheduleBuildPass>(&mut self, option: T::NodeOptions) {
-        self.0.insert(TypeId::of::<T>(), Box::new(option));
-    }
-    /// Get the dependency config established by the chain T.
-    pub fn get_node_config<T: ScheduleBuildPass>(&self) -> Option<&T::NodeOptions> {
-        self.0.get(&TypeId::of::<T>())?.downcast_ref()
-    }
 }
 
 /// A collection of systems, and the metadata and executor needed to run them
@@ -353,7 +332,7 @@ impl Schedule {
                 .clone();
             self.graph.update_schedule(
                 &mut self.executable,
-                world.components(),
+                world,
                 &ignored_ambiguities,
                 self.name,
             )?;
@@ -1007,7 +986,7 @@ impl ScheduleGraph {
     /// - checks for system access conflicts and reports ambiguities
     pub fn build_schedule(
         &mut self,
-        components: &Components,
+        world: &mut World,
         schedule_label: InternedScheduleLabel,
         ignored_ambiguities: &BTreeSet<ComponentId>,
     ) -> Result<SystemSchedule, ScheduleBuildError> {
@@ -1043,7 +1022,7 @@ impl ScheduleGraph {
         // modify graph with build passes
         let mut passes = std::mem::take(&mut self.passes);
         for pass in passes.values_mut() {
-            dependency_flattened = pass.build(self, &mut dependency_flattened)?;
+            pass.build(world, self, &mut dependency_flattened)?;
         }
         self.passes = passes;
 
@@ -1070,7 +1049,7 @@ impl ScheduleGraph {
             &ambiguous_with_flattened,
             ignored_ambiguities,
         );
-        self.optionally_check_conflicts(&conflicting_systems, components, schedule_label)?;
+        self.optionally_check_conflicts(&conflicting_systems, world.components(), schedule_label)?;
         self.conflicting_systems = conflicting_systems;
 
         // build the schedule
@@ -1331,7 +1310,7 @@ impl ScheduleGraph {
     fn update_schedule(
         &mut self,
         schedule: &mut SystemSchedule,
-        components: &Components,
+        world: &mut World,
         ignored_ambiguities: &BTreeSet<ComponentId>,
         schedule_label: InternedScheduleLabel,
     ) -> Result<(), ScheduleBuildError> {
@@ -1358,7 +1337,7 @@ impl ScheduleGraph {
             self.system_set_conditions[id.index()] = conditions;
         }
 
-        *schedule = self.build_schedule(components, schedule_label, ignored_ambiguities)?;
+        *schedule = self.build_schedule(world, schedule_label, ignored_ambiguities)?;
 
         // move systems into new schedule
         for &id in &schedule.system_ids {
@@ -1828,9 +1807,9 @@ pub enum LogLevel {
 /// A pass for modular modification of the dependency graph.
 pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
     /// Custom options for dependencies between sets or systems.
-    type EdgeOptions: Clone + 'static;
+    type EdgeOptions: Send + Sync + Clone + 'static;
     /// Custom options for individual systems.
-    type NodeOptions: Clone + 'static;
+    type NodeOptions: Send + Sync + Clone + 'static;
 
     /// Called when a dependency between sets or systems was explicitly added to the graph.
     fn add_dependency(&mut self, from: NodeId, to: NodeId, options: Option<&Self::EdgeOptions>);
@@ -1853,18 +1832,20 @@ pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
     /// The implementation will be able to modify the `ScheduleGraph` here.
     fn build(
         &mut self,
+        world: &mut World,
         graph: &mut ScheduleGraph,
         dependency_flattened: &mut GraphMap<NodeId, (), Directed>,
-    ) -> Result<GraphMap<NodeId, (), Directed>, ScheduleBuildError>;
+    ) -> Result<(), ScheduleBuildError>;
 }
 
 /// Object safe version of [`ScheduleBuildPass`].
 trait ScheduleBuildPassObj: Send + Sync + Debug {
     fn build(
         &mut self,
+        world: &mut World,
         graph: &mut ScheduleGraph,
         dependency_flattened: &mut GraphMap<NodeId, (), Directed>,
-    ) -> Result<GraphMap<NodeId, (), Directed>, ScheduleBuildError>;
+    ) -> Result<(), ScheduleBuildError>;
 
     fn collapse_set(
         &mut self,
@@ -1878,10 +1859,11 @@ trait ScheduleBuildPassObj: Send + Sync + Debug {
 impl<T: ScheduleBuildPass> ScheduleBuildPassObj for T {
     fn build(
         &mut self,
+        world: &mut World,
         graph: &mut ScheduleGraph,
         dependency_flattened: &mut GraphMap<NodeId, (), Directed>,
-    ) -> Result<GraphMap<NodeId, (), Directed>, ScheduleBuildError> {
-        self.build(graph, dependency_flattened)
+    ) -> Result<(), ScheduleBuildError> {
+        self.build(world, graph, dependency_flattened)
     }
     fn collapse_set(
         &mut self,
@@ -1894,7 +1876,7 @@ impl<T: ScheduleBuildPass> ScheduleBuildPassObj for T {
         dependencies_to_add.extend(iter);
     }
     fn add_dependency(&mut self, from: NodeId, to: NodeId, all_options: &ConfigMap) {
-        let option = all_options.get_edge_config::<T>();
+        let option = all_options.get::<T::EdgeOptions>();
         self.add_dependency(from, to, option);
     }
 }

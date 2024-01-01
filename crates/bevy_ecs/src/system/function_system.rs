@@ -8,7 +8,7 @@ use crate::{
     world::{unsafe_world_cell::UnsafeWorldCell, World, WorldId},
 };
 
-use bevy_utils::all_tuples;
+use bevy_utils::{all_tuples, ConfigMap};
 use std::{any::TypeId, borrow::Cow, marker::PhantomData};
 
 #[cfg(feature = "trace")]
@@ -26,6 +26,8 @@ pub struct SystemMeta {
     // SystemParams from overriding each other
     is_send: bool,
     has_deferred: bool,
+    /// The default [`ConfigMap`] to be added to schedule nodes created from this system.
+    pub default_config: ConfigMap,
     pub(crate) last_run: Tick,
     #[cfg(feature = "trace")]
     pub(crate) system_span: Span,
@@ -40,6 +42,7 @@ impl SystemMeta {
             name: name.into(),
             archetype_component_access: Access::default(),
             component_access_set: FilteredAccessSet::default(),
+            default_config: ConfigMap::default(),
             is_send: true,
             has_deferred: false,
             last_run: Tick::new(0),
@@ -543,6 +546,10 @@ where
     fn default_system_sets(&self) -> Vec<InternedSystemSet> {
         let set = crate::schedule::SystemTypeSet::<F>::new();
         vec![set.intern()]
+    }
+
+    fn default_configs(&self) -> Option<&ConfigMap> {
+        Some(&self.system_meta.default_config)
     }
 
     fn get_last_run(&self) -> Tick {

@@ -10,7 +10,8 @@ use crate::{
     system::{BoxedSystem, IntoSystem, System},
 };
 
-use super::{ConfigMap, ScheduleBuildPass};
+use bevy_utils::ConfigMap;
+use super::{ScheduleBuildPass};
 
 fn new_condition<M>(condition: impl Condition<M>) -> BoxedCondition {
     let condition_system = IntoSystem::into_system(condition);
@@ -83,7 +84,7 @@ impl SystemConfigs {
     fn new_system(system: BoxedSystem) -> Self {
         // include system in its default sets
         let sets = system.default_system_sets().into_iter().collect();
-        let default_configs = system.default_configs();
+        let default_configs = system.default_configs().cloned().unwrap_or_default();
         Self::NodeConfig(SystemConfig {
             node: system,
             config: default_configs,
@@ -146,7 +147,7 @@ impl<T> NodeConfigs<T> {
     fn with_option_inner<P: ScheduleBuildPass>(&mut self, option: P::NodeOptions) {
         match self {
             Self::NodeConfig(config) => {
-                config.config.add_node_config::<P>(option);
+                config.config.insert::<P::NodeOptions>(option);
             }
             Self::Configs { configs, .. } => {
                 for config in configs {
@@ -273,7 +274,7 @@ impl<T> NodeConfigs<T> {
             Self::NodeConfig(_) => { /* no op */ }
             Self::Configs { chained, .. } => {
                 if let Chain::Chained(config) = chained {
-                    config.add_edge_config::<P>(option);
+                    config.insert::<P::EdgeOptions>(option);
                 } else {
                     panic!("`with_chain_option` must be called after `chain`");
                 };

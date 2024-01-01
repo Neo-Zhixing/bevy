@@ -9,7 +9,10 @@ use bevy_utils::{
     HashMap,
 };
 
-use crate::system::IntoSystem;
+use crate::{
+    system::IntoSystem,
+    world::World,
+};
 
 use super::{
     apply_deferred, is_apply_deferred, NodeId, ReportCycles, ScheduleBuildError, ScheduleBuildPass,
@@ -80,9 +83,10 @@ impl ScheduleBuildPass for AutoInsertApplyDeferredPass {
 
     fn build(
         &mut self,
+        _world: &mut World,
         graph: &mut ScheduleGraph,
         dependency_flattened: &mut GraphMap<NodeId, (), Directed>,
-    ) -> Result<GraphMap<NodeId, (), Directed>, ScheduleBuildError> {
+    ) -> Result<(), ScheduleBuildError> {
         let mut sync_point_graph = dependency_flattened.clone();
         let topo = graph.topsort_graph(dependency_flattened, ReportCycles::Dependency)?;
 
@@ -122,8 +126,8 @@ impl ScheduleBuildPass for AutoInsertApplyDeferredPass {
                 }
             }
         }
-
-        Ok(sync_point_graph)
+        *dependency_flattened = sync_point_graph;
+        Ok(())
     }
 
     type CollapseSetIterator = std::iter::Empty<(NodeId, NodeId)>;

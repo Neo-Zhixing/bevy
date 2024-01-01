@@ -22,12 +22,14 @@ pub mod uuid;
 mod cow_arc;
 mod default;
 mod float_ord;
+mod config_map;
 pub mod intern;
 
 pub use crate::uuid::Uuid;
 pub use ahash::{AHasher, RandomState};
 pub use bevy_utils_proc_macros::*;
 pub use cow_arc::*;
+pub use config_map::ConfigMap;
 pub use default::default;
 pub use float_ord::*;
 pub use hashbrown;
