@@ -38,14 +38,24 @@ impl ConfigMap {
     }
     /// Obtains a reference to the stored value of a given type.
     pub fn get<'a, T: Send + Sync + Clone + 'static>(&'a self) -> Option<&'a T> {
-        self.0.get(&TypeId::of::<T>())?.as_any().downcast_ref()
+        let item: &dyn ConfigMapObj = self.0.get(&TypeId::of::<T>())?.as_ref();
+        let item = item.as_any();
+        let boxed_item: &T = item.downcast_ref::<T>().unwrap();
+        Some(boxed_item)
     }
     /// Obtains a mutable reference to the stored value of a given type.
     pub fn get_mut<T: Send + Sync + Clone + 'static>(&mut self) -> Option<&mut T> {
-        self.0.get_mut(&TypeId::of::<T>())?.as_any_mut().downcast_mut()
+        let item: &mut dyn ConfigMapObj = self.0.get_mut(&TypeId::of::<T>())?.as_mut();
+        let item = item.as_any_mut();
+        let boxed_item: &mut T = item.downcast_mut::<T>().unwrap();
+        Some(boxed_item)
     }
     /// Checks if the map contains a value of the given type.
     pub fn has<T: Send + Sync + Clone + 'static>(&self) -> bool {
         self.0.contains_key(&TypeId::of::<T>())
+    }
+    /// Number of distinct types stored in the map.
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 }
