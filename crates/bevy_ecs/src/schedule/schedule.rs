@@ -1,5 +1,5 @@
 use std::{
-    any::{Any, TypeId},
+    any::TypeId,
     collections::{BTreeMap, BTreeSet},
     fmt::{Debug, Write},
     result::Result,
@@ -2095,7 +2095,9 @@ mod tests {
                     insert_resource,
                     resource_does_not_exist
                         .after(insert_resource)
-                        .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                        .with_dependency_option::<AutoInsertApplyDeferredPass>(|entry| {
+                            entry.or_insert(IgnoreDeferred);
+                        }),
                 ));
             });
         }
@@ -2106,7 +2108,9 @@ mod tests {
                 schedule.add_systems((
                     insert_resource
                         .before(resource_does_not_exist)
-                        .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                        .with_dependency_option::<AutoInsertApplyDeferredPass>(|entry| {
+                            entry.or_insert(IgnoreDeferred);
+                        }),
                     resource_does_not_exist,
                 ));
             });
@@ -2120,7 +2124,9 @@ mod tests {
                     .configure_sets(
                         Sets::A
                             .after(insert_resource)
-                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(|entry| {
+                                entry.or_insert(IgnoreDeferred);
+                            }),
                     );
             });
         }
@@ -2133,7 +2139,9 @@ mod tests {
                     .configure_sets(
                         Sets::A
                             .before(resource_does_not_exist)
-                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(|entry| {
+                                entry.or_insert(IgnoreDeferred);
+                            }),
                     );
             });
         }
@@ -2149,7 +2157,9 @@ mod tests {
                     .configure_sets(
                         Sets::B
                             .after(Sets::A)
-                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(|entry| {
+                                entry.or_insert(IgnoreDeferred);
+                            }),
                     );
             });
         }
@@ -2165,7 +2175,9 @@ mod tests {
                     .configure_sets(
                         Sets::A
                             .before(Sets::B)
-                            .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                            .with_dependency_option::<AutoInsertApplyDeferredPass>(|entry| {
+                                entry.or_insert(IgnoreDeferred);
+                            }),
                     );
             });
         }
@@ -2178,7 +2190,9 @@ mod tests {
             let mut schedule = Schedule::default();
             schedule.add_systems(
                 insert_resource
-                    .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    .with_dependency_option::<AutoInsertApplyDeferredPass>(|entry| {
+                        entry.or_insert(IgnoreDeferred);
+                    }),
             );
         }
 
@@ -2193,7 +2207,9 @@ mod tests {
                     insert_resource.before(resource_does_not_exist),
                     resource_does_not_exist.after(insert_resource),
                 )
-                    .with_dependency_option::<AutoInsertApplyDeferredPass>(IgnoreDeferred),
+                    .with_dependency_option::<AutoInsertApplyDeferredPass>(|entry| {
+                        entry.or_insert(IgnoreDeferred);
+                    }),
             );
         }
     }

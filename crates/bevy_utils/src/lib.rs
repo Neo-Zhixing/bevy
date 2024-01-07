@@ -29,7 +29,7 @@ pub use crate::uuid::Uuid;
 pub use ahash::{AHasher, RandomState};
 pub use bevy_utils_proc_macros::*;
 pub use cow_arc::*;
-pub use config_map::ConfigMap;
+pub use config_map::{ConfigMap, ConfigMapEntry};
 pub use default::default;
 pub use float_ord::*;
 pub use hashbrown;

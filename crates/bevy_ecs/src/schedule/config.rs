@@ -1,4 +1,4 @@
-use bevy_utils::all_tuples;
+use bevy_utils::{all_tuples, ConfigMapEntry};
 
 use crate::{
     schedule::{
@@ -144,14 +144,15 @@ impl<T> NodeConfigs<T> {
         }
     }
 
-    fn with_option_inner<P: ScheduleBuildPass>(&mut self, option: P::NodeOptions) {
+    fn with_option_inner<P: ScheduleBuildPass>(&mut self, option: &mut impl FnMut(ConfigMapEntry<P::NodeOptions>)) {
         match self {
             Self::NodeConfig(config) => {
-                config.config.insert::<P::NodeOptions>(option);
+                let entry = config.config.entry::<P::NodeOptions>();
+                option(entry);
             }
             Self::Configs { configs, .. } => {
                 for config in configs {
-                    config.with_option_inner::<P>(option.clone());
+                    config.with_option_inner::<P>(option);
                 }
             }
         }
@@ -159,7 +160,7 @@ impl<T> NodeConfigs<T> {
 
     fn with_dependency_option_inner<P: ScheduleBuildPass>(
         &mut self,
-        option: P::EdgeOptions,
+        option: &mut impl FnMut(ConfigMapEntry<P::EdgeOptions>),
     ) -> Option<&Dependency> {
         match self {
             Self::NodeConfig(config) => {
@@ -167,7 +168,8 @@ impl<T> NodeConfigs<T> {
                     config.graph_info.dependencies.last_mut().expect(
                         "`before` or `after` must be called prior to `with_dependency_option`",
                     );
-                last_pass.add_config::<P>(option);
+                let entry = last_pass.options.entry::<P::EdgeOptions>();
+                option(entry);
                 Some(last_pass)
             }
             Self::Configs { configs, .. } => {
@@ -183,7 +185,7 @@ impl<T> NodeConfigs<T> {
                 // ```
 
                 for config in configs {
-                    let dependency2 = config.with_dependency_option_inner::<P>(option.clone());
+                    let dependency2 = config.with_dependency_option_inner::<P>(option);
                     if let Some(dependency2) = dependency2 {
                         if let Some(dependency) = dependency {
                             assert!(
@@ -355,14 +357,14 @@ where
     }
 
     /// Apply option to the current systems.
-    fn with_option<P: ScheduleBuildPass>(self, option: P::NodeOptions) -> SystemConfigs {
+    fn with_option<P: ScheduleBuildPass>(self, option: impl FnMut(ConfigMapEntry<P::NodeOptions>)) -> SystemConfigs {
         self.into_configs().with_option::<P>(option)
     }
 
     /// Apply dependency option to the last added dependency.
     ///
     /// Must be called after [`before`](Self::before) or [`after`](Self::after).
-    fn with_dependency_option<P: ScheduleBuildPass>(self, option: P::EdgeOptions) -> SystemConfigs {
+    fn with_dependency_option<P: ScheduleBuildPass>(self, option: impl FnMut(ConfigMapEntry<P::EdgeOptions>)) -> SystemConfigs {
         self.into_configs().with_dependency_option::<P>(option)
     }
 
@@ -496,16 +498,16 @@ impl IntoSystemConfigs<()> for SystemConfigs {
         self
     }
 
-    fn with_option<P: ScheduleBuildPass>(mut self, option: P::NodeOptions) -> SystemConfigs {
-        self.with_option_inner::<P>(option);
+    fn with_option<P: ScheduleBuildPass>(mut self, mut option: impl FnMut(ConfigMapEntry<P::NodeOptions>)) -> SystemConfigs {
+        self.with_option_inner::<P>(&mut option);
         self
     }
 
     fn with_dependency_option<P: ScheduleBuildPass>(
         mut self,
-        option: P::EdgeOptions,
+        mut option: impl FnMut(ConfigMapEntry<P::EdgeOptions>),
     ) -> SystemConfigs {
-        self.with_dependency_option_inner::<P>(option);
+        self.with_dependency_option_inner::<P>(&mut option);
         self
     }
 
@@ -623,7 +625,7 @@ where
     }
 
     /// Apply option to the current systems.
-    fn with_option<P: ScheduleBuildPass>(self, option: P::NodeOptions) -> SystemSetConfigs {
+    fn with_option<P: ScheduleBuildPass>(self, option: impl FnMut(ConfigMapEntry<P::NodeOptions>)) -> SystemSetConfigs {
         self.into_configs().with_option::<P>(option)
     }
 
@@ -632,7 +634,7 @@ where
     /// Must be called after [`before`](Self::before) or [`after`](Self::after).
     fn with_dependency_option<P: ScheduleBuildPass>(
         self,
-        option: P::EdgeOptions,
+        option: impl FnMut(ConfigMapEntry<P::EdgeOptions>),
     ) -> SystemSetConfigs {
         self.into_configs().with_dependency_option::<P>(option)
     }
@@ -701,16 +703,16 @@ impl IntoSystemSetConfigs for SystemSetConfigs {
         self
     }
 
-    fn with_option<P: ScheduleBuildPass>(mut self, option: P::NodeOptions) -> SystemSetConfigs {
-        self.with_option_inner::<P>(option);
+    fn with_option<P: ScheduleBuildPass>(mut self, mut option: impl FnMut(ConfigMapEntry<P::NodeOptions>)) -> SystemSetConfigs {
+        self.with_option_inner::<P>(&mut option);
         self
     }
 
     fn with_dependency_option<P: ScheduleBuildPass>(
         mut self,
-        option: P::EdgeOptions,
+        mut option: impl FnMut(ConfigMapEntry<P::EdgeOptions>),
     ) -> SystemSetConfigs {
-        self.with_dependency_option_inner::<P>(option);
+        self.with_dependency_option_inner::<P>(&mut option);
         self
     }
 

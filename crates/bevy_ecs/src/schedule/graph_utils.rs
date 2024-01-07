@@ -9,7 +9,6 @@ use fixedbitset::FixedBitSet;
 use crate::schedule::set::*;
 
 use bevy_utils::ConfigMap;
-use super::{ScheduleBuildPass};
 
 /// Unique identifier for a system or system set stored in a [`ScheduleGraph`].
 ///
@@ -64,9 +63,6 @@ impl Dependency {
             set,
             options: Default::default(),
         }
-    }
-    pub fn add_config<T: ScheduleBuildPass>(&mut self, option: T::EdgeOptions) {
-        self.options.insert::<T::EdgeOptions>(option);
     }
 }
 
