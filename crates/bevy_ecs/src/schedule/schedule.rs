@@ -465,11 +465,6 @@ impl SystemNode {
         }
     }
 
-    pub fn initialize(&mut self, world: &mut World) {
-        let system = self.get_mut().unwrap();
-        system.initialize(world);
-    }
-
     pub fn get(&self) -> Option<&BoxedSystem> {
         self.inner.as_ref()
     }
