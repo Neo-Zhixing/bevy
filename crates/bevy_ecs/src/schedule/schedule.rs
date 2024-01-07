@@ -452,13 +452,16 @@ impl SystemSetNode {
 /// A [`BoxedSystem`] with metadata, stored in a [`ScheduleGraph`].
 pub struct SystemNode {
     inner: Option<BoxedSystem>,
+    /// Custom configurations associated with this system.
+    pub config: ConfigMap,
 }
 
 impl SystemNode {
     #![allow(missing_docs)]
-    pub fn new(system: BoxedSystem) -> Self {
+    pub fn new(system: BoxedSystem, config: ConfigMap) -> Self {
         Self {
             inner: Some(system),
+            config,
         }
     }
 
@@ -793,7 +796,7 @@ impl ScheduleGraph {
 
         // system init has to be deferred (need `&mut World`)
         self.uninit.push((id, 0));
-        self.systems.push(SystemNode::new(config.node));
+        self.systems.push(SystemNode::new(config.node, config.config));
         self.system_conditions.push(config.conditions);
 
         Ok(id)

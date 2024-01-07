@@ -60,7 +60,7 @@ impl AutoInsertApplyDeferredPass {
             .systems
             .push(SystemNode::new(Box::new(IntoSystem::into_system(
                 apply_deferred,
-            ))));
+            )), Default::default()));
         graph.system_conditions.push(Vec::new());
 
         // ignore ambiguities with auto sync points
