@@ -148,6 +148,9 @@ where
     fn default_configs(&self, configs: &mut ConfigMap) {
         self.system.default_configs(configs);
     }
+    fn set_configs(&mut self, config: &ConfigMap) {
+        self.system.set_configs(config);
+    }
 
     fn get_last_run(&self) -> crate::component::Tick {
         self.system.get_last_run()

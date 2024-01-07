@@ -232,6 +232,9 @@ where
         self.a.default_configs(config);
         self.b.default_configs(config);
     }
+    fn set_configs(&mut self, config: &ConfigMap) {
+        self.a.set_configs(config);
+    }
 
     fn get_last_run(&self) -> Tick {
         self.a.get_last_run()

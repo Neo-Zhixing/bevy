@@ -158,6 +158,12 @@ where
         F::Param::default_configs(config);
     }
 
+    fn set_configs(&mut self, config: &bevy_utils::ConfigMap) {
+        if let Some(state) = &mut self.param_state {
+            F::Param::set_configs(state, config);
+        }
+    }
+
     fn get_last_run(&self) -> Tick {
         self.system_meta.last_run
     }

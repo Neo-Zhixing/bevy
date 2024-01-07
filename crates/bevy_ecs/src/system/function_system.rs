@@ -548,6 +548,12 @@ where
     fn default_configs(&self, configs: &mut ConfigMap) {
         F::Param::default_configs(configs);
     }
+    fn set_configs(&mut self, configs: &ConfigMap) {
+        if let Some(state) = &mut self.param_state {
+            F::Param::set_configs(state, configs);
+        }
+    }
+
 
     fn get_last_run(&self) -> Tick {
         self.system_meta.last_run
