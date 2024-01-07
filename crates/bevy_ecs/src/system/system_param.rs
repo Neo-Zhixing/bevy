@@ -16,7 +16,7 @@ use bevy_ecs_macros::impl_param_set;
 pub use bevy_ecs_macros::Resource;
 pub use bevy_ecs_macros::SystemParam;
 use bevy_ptr::UnsafeCellDeref;
-use bevy_utils::{all_tuples, synccell::SyncCell};
+use bevy_utils::{all_tuples, synccell::SyncCell, ConfigMap};
 use std::{
     borrow::Cow,
     fmt::Debug,
@@ -108,6 +108,9 @@ pub unsafe trait SystemParam: Sized {
     /// Registers any [`World`] access used by this [`SystemParam`]
     /// and creates a new instance of this param's [`State`](Self::State).
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State;
+
+    /// Registers any additional configurations on the systems using this [`SystemParam`].
+    fn default_configs(_config: &mut ConfigMap){}
 
     /// For the specified [`Archetype`], registers the components accessed by this [`SystemParam`] (if applicable).
     #[inline]
@@ -1387,6 +1390,11 @@ macro_rules! impl_system_param_tuple {
             #[inline]
             fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {
                 (($($param::init_state(_world, _system_meta),)*))
+            }
+
+            #[inline]
+            fn default_configs(_default_configs: &mut ConfigMap) {
+                $($param::default_configs(_default_configs);)*
             }
 
             #[inline]

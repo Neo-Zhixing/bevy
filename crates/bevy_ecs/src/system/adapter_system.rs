@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use bevy_utils::ConfigMap;
+
 use super::{ReadOnlySystem, System};
 use crate::{schedule::InternedSystemSet, world::unsafe_world_cell::UnsafeWorldCell};
 
@@ -141,6 +143,10 @@ where
 
     fn default_system_sets(&self) -> Vec<InternedSystemSet> {
         self.system.default_system_sets()
+    }
+
+    fn default_configs(&self, configs: &mut ConfigMap) {
+        self.system.default_configs(configs);
     }
 
     fn get_last_run(&self) -> crate::component::Tick {

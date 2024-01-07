@@ -84,10 +84,11 @@ impl SystemConfigs {
     fn new_system(system: BoxedSystem) -> Self {
         // include system in its default sets
         let sets = system.default_system_sets().into_iter().collect();
-        let default_configs = system.default_configs().cloned().unwrap_or_default();
+        let mut config = ConfigMap::new();
+        system.default_configs(&mut config);
         Self::NodeConfig(SystemConfig {
             node: system,
-            config: default_configs,
+            config,
             graph_info: GraphInfo {
                 sets,
                 ..Default::default()

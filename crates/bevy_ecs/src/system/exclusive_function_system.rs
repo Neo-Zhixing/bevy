@@ -154,6 +154,10 @@ where
         vec![set.intern()]
     }
 
+    fn default_configs(&self, config: &mut bevy_utils::ConfigMap) {
+        F::Param::default_configs(config);
+    }
+
     fn get_last_run(&self) -> Tick {
         self.system_meta.last_run
     }

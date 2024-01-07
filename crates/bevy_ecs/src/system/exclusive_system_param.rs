@@ -4,7 +4,7 @@ use crate::{
     system::{Local, SystemMeta, SystemParam, SystemState},
     world::World,
 };
-use bevy_utils::all_tuples;
+use bevy_utils::{all_tuples, ConfigMap};
 use bevy_utils::synccell::SyncCell;
 
 /// A parameter that can be used in an exclusive system (a system with an `&mut World` parameter).
@@ -23,6 +23,9 @@ pub trait ExclusiveSystemParam: Sized {
     ///
     /// [`ExclusiveSystemParamFunction`]: super::ExclusiveSystemParamFunction
     fn get_param<'s>(state: &'s mut Self::State, system_meta: &SystemMeta) -> Self::Item<'s>;
+
+    /// Registers any additional configurations on the systems using this [`ExclusiveSystemParam`].
+    fn default_configs(_config: &mut ConfigMap){}
 }
 
 /// Shorthand way of accessing the associated type [`ExclusiveSystemParam::Item`]
@@ -92,6 +95,11 @@ macro_rules! impl_exclusive_system_param_tuple {
 
                 let ($($param,)*) = state;
                 ($($param::get_param($param, system_meta),)*)
+            }
+
+            #[inline]
+            fn default_configs(default_configs: &mut ConfigMap) {
+                $($param::default_configs(default_configs);)*
             }
         }
     };

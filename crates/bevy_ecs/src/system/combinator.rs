@@ -1,6 +1,7 @@
 use std::{borrow::Cow, cell::UnsafeCell, marker::PhantomData};
 
 use bevy_ptr::UnsafeCellDeref;
+use bevy_utils::ConfigMap;
 
 use crate::{
     archetype::ArchetypeComponentId,
@@ -226,6 +227,10 @@ where
         let mut default_sets = self.a.default_system_sets();
         default_sets.append(&mut self.b.default_system_sets());
         default_sets
+    }
+    fn default_configs(&self, config: &mut ConfigMap) {
+        self.a.default_configs(config);
+        self.b.default_configs(config);
     }
 
     fn get_last_run(&self) -> Tick {

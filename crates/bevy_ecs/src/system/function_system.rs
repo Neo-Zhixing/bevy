@@ -26,8 +26,6 @@ pub struct SystemMeta {
     // SystemParams from overriding each other
     is_send: bool,
     has_deferred: bool,
-    /// The default [`ConfigMap`] to be added to schedule nodes created from this system.
-    pub default_config: ConfigMap,
     pub(crate) last_run: Tick,
     #[cfg(feature = "trace")]
     pub(crate) system_span: Span,
@@ -42,7 +40,6 @@ impl SystemMeta {
             name: name.into(),
             archetype_component_access: Access::default(),
             component_access_set: FilteredAccessSet::default(),
-            default_config: ConfigMap::default(),
             is_send: true,
             has_deferred: false,
             last_run: Tick::new(0),
@@ -548,8 +545,8 @@ where
         vec![set.intern()]
     }
 
-    fn default_configs(&self) -> Option<&ConfigMap> {
-        Some(&self.system_meta.default_config)
+    fn default_configs(&self, configs: &mut ConfigMap) {
+        F::Param::default_configs(configs);
     }
 
     fn get_last_run(&self) -> Tick {

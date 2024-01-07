@@ -101,9 +101,7 @@ pub trait System: Send + Sync + 'static {
     }
 
     /// Returns the system's default [`ConfigMap`].
-    fn default_configs(&self) -> Option<&ConfigMap> {
-        None
-    }
+    fn default_configs(&self, _config: &mut ConfigMap) {}
 
     /// Gets the tick indicating the last time this system ran.
     fn get_last_run(&self) -> Tick;
