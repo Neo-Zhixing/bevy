@@ -232,7 +232,7 @@ where
         self.a.default_configs(config);
         self.b.default_configs(config);
     }
-    fn set_configs(&mut self, config: &ConfigMap) {
+    fn set_configs(&mut self, config: &mut ConfigMap) {
         self.a.set_configs(config);
     }
 

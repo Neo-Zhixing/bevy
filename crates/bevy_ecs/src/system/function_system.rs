@@ -548,7 +548,7 @@ where
     fn default_configs(&self, configs: &mut ConfigMap) {
         F::Param::default_configs(configs);
     }
-    fn set_configs(&mut self, configs: &ConfigMap) {
+    fn set_configs(&mut self, configs: &mut ConfigMap) {
         if let Some(state) = &mut self.param_state {
             F::Param::set_configs(state, configs);
         }

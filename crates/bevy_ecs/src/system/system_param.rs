@@ -113,7 +113,7 @@ pub unsafe trait SystemParam: Sized {
     fn default_configs(_config: &mut ConfigMap){}
 
     /// Receives information from custom render passes.
-    fn set_configs(_state: &mut Self::State, _config: &ConfigMap){}
+    fn set_configs(_state: &mut Self::State, _config: &mut ConfigMap){}
 
     /// For the specified [`Archetype`], registers the components accessed by this [`SystemParam`] (if applicable).
     #[inline]
@@ -1400,7 +1400,7 @@ macro_rules! impl_system_param_tuple {
                 $($param::default_configs(_default_configs);)*
             }
             #[inline]
-            fn set_configs(($($param,)*): &mut Self::State, _default_configs: &ConfigMap) {
+            fn set_configs(($($param,)*): &mut Self::State, _default_configs: &mut ConfigMap) {
                 $($param::set_configs($param, _default_configs);)*
             }
 

@@ -105,7 +105,7 @@ pub trait System: Send + Sync + 'static {
     fn default_configs(&self, _config: &mut ConfigMap) {}
 
     /// Receives custom configurations from [`ScheduleBuildPass`]es.
-    fn set_configs(&mut self, _config: &ConfigMap){}
+    fn set_configs(&mut self, _config: &mut ConfigMap){}
 
     /// Gets the tick indicating the last time this system ran.
     fn get_last_run(&self) -> Tick;

@@ -148,7 +148,7 @@ where
     fn default_configs(&self, configs: &mut ConfigMap) {
         self.system.default_configs(configs);
     }
-    fn set_configs(&mut self, config: &ConfigMap) {
+    fn set_configs(&mut self, config: &mut ConfigMap) {
         self.system.set_configs(config);
     }
 

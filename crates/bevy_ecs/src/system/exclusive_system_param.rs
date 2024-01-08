@@ -27,7 +27,7 @@ pub trait ExclusiveSystemParam: Sized {
     /// Registers any additional configurations on the systems using this [`ExclusiveSystemParam`].
     fn default_configs(_config: &mut ConfigMap){}
     /// Receives information from custom [`ScheduleBuildPass`].
-    fn set_configs(_state: &mut Self::State, _config: &ConfigMap){}
+    fn set_configs(_state: &mut Self::State, _config: &mut ConfigMap){}
 }
 
 /// Shorthand way of accessing the associated type [`ExclusiveSystemParam::Item`]
@@ -105,7 +105,7 @@ macro_rules! impl_exclusive_system_param_tuple {
             }
             
             #[inline]
-            fn set_configs(($($param,)*): &mut Self::State, default_configs: &ConfigMap) {
+            fn set_configs(($($param,)*): &mut Self::State, default_configs: &mut ConfigMap) {
                 $($param::set_configs($param, default_configs);)*
             }
         }
