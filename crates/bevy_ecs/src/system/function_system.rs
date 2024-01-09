@@ -81,6 +81,15 @@ impl SystemMeta {
     pub fn set_has_deferred(&mut self) {
         self.has_deferred = true;
     }
+
+    /// Returns a readonly reference to the component access set for this system.
+    pub fn component_access_set(&self) -> &FilteredAccessSet<ComponentId> {
+        &self.component_access_set
+    }
+    /// Returns a readonly reference to the archetype component access set for this system.
+    pub fn archetype_component_access(&self) -> &Access<ArchetypeComponentId> {
+        &self.archetype_component_access
+    }
 }
 
 // TODO: Actually use this in FunctionSystem. We should probably only do this once Systems are constructed using a World reference
