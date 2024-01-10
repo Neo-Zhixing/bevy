@@ -542,7 +542,7 @@ impl Archetype {
 ///
 /// This is used in archetype update methods to limit archetype updates to the
 /// ones added since the last time the method ran.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ArchetypeGeneration(ArchetypeId);
 
 impl ArchetypeGeneration {
@@ -585,7 +585,7 @@ struct ArchetypeComponents {
 /// [`World`]: crate::world::World
 /// [`Resource`]: crate::system::Resource
 /// [many-to-many relationship]: https://en.wikipedia.org/wiki/Many-to-many_(data_model)
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub struct ArchetypeComponentId(usize);
 
 impl ArchetypeComponentId {
