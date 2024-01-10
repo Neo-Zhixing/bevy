@@ -636,6 +636,23 @@ unsafe impl SystemParam for &'_ World {
     }
 }
 
+unsafe impl SystemParam for UnsafeWorldCell<'_> {
+    type State = ();
+    type Item<'w, 's> = UnsafeWorldCell<'w>;
+
+    fn init_state(_world: &mut World, _system_meta: &mut SystemMeta) -> Self::State {
+        ()
+    }
+    unsafe fn get_param<'w, 's>(
+        _state: &'s mut Self::State,
+        _system_meta: &SystemMeta,
+        world: UnsafeWorldCell<'w>,
+        _change_tick: Tick,
+    ) -> Self::Item<'w, 's> {
+        world
+    }
+}
+
 /// A system local [`SystemParam`].
 ///
 /// A local may only be accessed by the system itself and is therefore not visible to other systems.
