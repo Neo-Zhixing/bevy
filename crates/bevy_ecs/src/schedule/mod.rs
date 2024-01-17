@@ -20,6 +20,11 @@ pub use self::state::*;
 
 pub use self::graph_utils::NodeId;
 
+/// Build passes that can be added to a [`Schedule`](crate::schedule::Schedule) with [`Schedule::add_build_pass`]
+pub mod passes {
+    pub use super::auto_insert_apply_deferred::*;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

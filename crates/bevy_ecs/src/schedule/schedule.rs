@@ -259,20 +259,24 @@ impl Schedule {
     }
 
     /// Add a build pass to the schedule.
-    pub fn add_build_pass<T: ScheduleBuildPass>(&mut self, pass: T) -> &mut Self {
-        self.graph.passes.insert(TypeId::of::<T>(), Box::new(pass));
-        self
+    #[must_use]
+    pub fn add_build_pass<T: ScheduleBuildPass>(&mut self, pass: T) -> ScheduleBuildPassBuilder {
+        ScheduleBuildPassBuilder {
+            schedule: self,
+            ty: TypeId::of::<T>(),
+            pass: Box::new(pass),
+        }
     }
 
     /// Remove a build pass.
     pub fn remove_build_pass<T: ScheduleBuildPass>(&mut self) {
-        self.graph.passes.remove(&TypeId::of::<T>());
+        self.graph.passes.retain(|(id, _)| *id != TypeId::of::<T>());
     }
 
     /// Changes miscellaneous build settings.
     pub fn set_build_settings(&mut self, settings: ScheduleBuildSettings) -> &mut Self {
         if settings.auto_insert_apply_deferred {
-            self.add_build_pass(AutoInsertApplyDeferredPass::default());
+            self.add_build_pass(AutoInsertApplyDeferredPass::default()).last();
         } else {
             self.remove_build_pass::<AutoInsertApplyDeferredPass>();
         }
@@ -494,7 +498,7 @@ pub struct ScheduleGraph {
     settings: ScheduleBuildSettings,
 
     /// A map of [`ScheduleBuildPassObj`]es, keyed by the [`TypeId`] of the corresponding [`ScheduleBuildPass`].
-    passes: BTreeMap<TypeId, Box<dyn ScheduleBuildPassObj>>,
+    passes: Vec<(TypeId, Box<dyn ScheduleBuildPassObj>)>,
 }
 
 impl ScheduleGraph {
@@ -684,7 +688,7 @@ impl ScheduleGraph {
                                     *first_in_current,
                                     (),
                                 );
-                                for pass in self.passes.values_mut() {
+                                for (_, pass) in self.passes.iter_mut() {
                                     pass.add_dependency(
                                         *last_in_prev,
                                         *first_in_current,
@@ -703,7 +707,7 @@ impl ScheduleGraph {
                                         (),
                                     );
 
-                                    for pass in self.passes.values_mut() {
+                                    for (_, pass) in self.passes.iter_mut() {
                                         pass.add_dependency(
                                             *last_in_prev,
                                             *current_node,
@@ -723,7 +727,7 @@ impl ScheduleGraph {
                                         (),
                                     );
 
-                                    for pass in self.passes.values_mut() {
+                                    for (_, pass) in self.passes.iter_mut() {
                                         pass.add_dependency(
                                             *previous_node,
                                             *first_in_current,
@@ -742,7 +746,7 @@ impl ScheduleGraph {
                                             *current_node,
                                             (),
                                         );
-                                        for pass in self.passes.values_mut() {
+                                        for (_, pass) in self.passes.iter_mut() {
                                             pass.add_dependency(
                                                 *previous_node,
                                                 *current_node,
@@ -937,7 +941,7 @@ impl ScheduleGraph {
                 DependencyKind::After => (set, id),
             };
             self.dependency.graph.add_edge(lhs, rhs, ());
-            for pass in self.passes.values_mut() {
+            for (_, pass) in self.passes.iter_mut() {
                 pass.add_dependency(lhs, rhs, &options);
             }
 
@@ -1024,7 +1028,7 @@ impl ScheduleGraph {
 
         // modify graph with build passes
         let mut passes = std::mem::take(&mut self.passes);
-        for pass in passes.values_mut() {
+        for (_, pass) in passes.iter_mut() {
             pass.build(world, self, &mut dependency_flattened)?;
         }
         self.passes = passes;
@@ -1105,7 +1109,7 @@ impl ScheduleGraph {
         let mut dependency_flattened = self.dependency.graph.clone();
         let mut temp = Vec::new();
         for (&set, systems) in set_systems {
-            for pass in self.passes.values_mut() {
+            for (_, pass) in self.passes.iter_mut() {
                 pass.collapse_set(set, systems, &dependency_flattened, &mut temp);
             }
             if systems.is_empty() {
@@ -1356,6 +1360,40 @@ impl ScheduleGraph {
         }
 
         Ok(())
+    }
+}
+
+/// A builder for ordering [`ScheduleBuildPass`].
+pub struct ScheduleBuildPassBuilder<'a> {
+    schedule: &'a mut Schedule,
+    ty: TypeId,
+    pass: Box<dyn ScheduleBuildPassObj>
+}
+impl<'a> ScheduleBuildPassBuilder<'a> {
+    /// Add a new [`ScheduleBuildPass`] to the [`Schedule`] before the specified [`ScheduleBuildPass`].
+    pub fn before<T: ScheduleBuildPass>(self) -> &'a mut Schedule {
+        let index = self.schedule.graph.passes.iter().position(|(id, _)| *id == TypeId::of::<T>());
+        if let Some(index) = index {
+            self.schedule.graph.passes.insert(index, (self.ty, self.pass));
+        } else {
+            self.schedule.graph.passes.push((self.ty, self.pass));
+        }
+        self.schedule
+    }
+    /// Add a new [`ScheduleBuildPass`] to the [`Schedule`] after the specified [`ScheduleBuildPass`].
+    pub fn after<T: ScheduleBuildPass>(mut self) -> &'a mut Schedule {
+        let index = self.schedule.graph.passes.iter().position(|(id, _)| *id == TypeId::of::<T>());
+        if let Some(index) = index {
+            self.schedule.graph.passes.insert(index+1, (self.ty, self.pass));
+        } else {
+            self.schedule.graph.passes.push((self.ty, self.pass));
+        }
+        self.schedule
+    }
+    /// Add a new [`ScheduleBuildPass`] to the [`Schedule`].
+    pub fn last(self) -> &'a mut Schedule {
+        self.schedule.graph.passes.push((self.ty, self.pass));
+        self.schedule
     }
 }
 
