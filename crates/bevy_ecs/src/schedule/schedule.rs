@@ -328,6 +328,10 @@ impl Schedule {
     ///
     /// Moves all systems and run conditions out of the [`ScheduleGraph`].
     pub fn initialize(&mut self, world: &mut World) -> Result<(), ScheduleBuildError> {
+        for (_, pass) in self.graph.passes.iter_mut() {
+            pass.initialize(world, &mut self.executable);
+        };
+
         if self.graph.changed {
             self.graph.initialize(world);
             let ignored_ambiguities = world
@@ -1852,6 +1856,13 @@ pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
     /// Custom options for individual systems.
     type NodeOptions: Send + Sync + Clone + 'static;
 
+    /// Initialize the pass. Called once everytime the schedule was run.
+    fn initialize(
+        &mut self,
+        world: &mut World,
+        graph: &mut SystemSchedule,
+    ) {}
+
     /// Called when a dependency between sets or systems was explicitly added to the graph.
     fn add_dependency(&mut self, from: NodeId, to: NodeId, options: Option<&Self::EdgeOptions>);
 
@@ -1881,6 +1892,11 @@ pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
 
 /// Object safe version of [`ScheduleBuildPass`].
 trait ScheduleBuildPassObj: Send + Sync + Debug {
+    fn initialize(
+        &mut self,
+        world: &mut World,
+        graph: &mut SystemSchedule,
+    );
     fn build(
         &mut self,
         world: &mut World,
@@ -1898,6 +1914,13 @@ trait ScheduleBuildPassObj: Send + Sync + Debug {
     fn add_dependency(&mut self, from: NodeId, to: NodeId, all_options: &ConfigMap);
 }
 impl<T: ScheduleBuildPass> ScheduleBuildPassObj for T {
+    fn initialize(
+        &mut self,
+        world: &mut World,
+        graph: &mut SystemSchedule,
+    ) {
+        self.initialize(world, graph)
+    }
     fn build(
         &mut self,
         world: &mut World,
