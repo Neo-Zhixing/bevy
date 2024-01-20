@@ -328,10 +328,6 @@ impl Schedule {
     ///
     /// Moves all systems and run conditions out of the [`ScheduleGraph`].
     pub fn initialize(&mut self, world: &mut World) -> Result<(), ScheduleBuildError> {
-        for (_, pass) in self.graph.passes.iter_mut() {
-            pass.initialize(world, &mut self.executable);
-        };
-
         if self.graph.changed {
             self.graph.initialize(world);
             let ignored_ambiguities = world
@@ -347,7 +343,9 @@ impl Schedule {
             self.graph.changed = false;
             self.executor_initialized = false;
         }
-
+        for (_, pass) in self.graph.passes.iter_mut() {
+            pass.initialize(world, &mut self.executable);
+        };
         if !self.executor_initialized {
             self.executor.init(&self.executable);
             self.executor_initialized = true;
