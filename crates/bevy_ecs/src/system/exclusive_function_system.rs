@@ -11,7 +11,7 @@ use crate::{
 };
 
 use bevy_utils::all_tuples;
-use std::{any::TypeId, borrow::Cow, marker::PhantomData};
+use std::{any::{Any, TypeId}, borrow::Cow, marker::PhantomData};
 
 /// A function system that runs with exclusive [`World`] access.
 ///
@@ -158,9 +158,10 @@ where
         F::Param::default_configs(config);
     }
 
-    fn set_configs(&mut self, config: &mut bevy_utils::ConfigMap) {
+    fn set_configs(&mut self, config: Box<dyn Any>) {
+        let mut config = Some(config);
         if let Some(state) = &mut self.param_state {
-            F::Param::set_configs(state, config);
+            F::Param::set_configs(state, &mut config);
         }
     }
 

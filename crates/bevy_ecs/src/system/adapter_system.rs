@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{any::Any, borrow::Cow};
 
 use bevy_utils::ConfigMap;
 
@@ -148,7 +148,7 @@ where
     fn default_configs(&self, configs: &mut ConfigMap) {
         self.system.default_configs(configs);
     }
-    fn set_configs(&mut self, config: &mut ConfigMap) {
+    fn set_configs(&mut self, config: Box<dyn Any>) {
         self.system.set_configs(config);
     }
 

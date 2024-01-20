@@ -7,7 +7,7 @@ use crate::schedule::{InternedSystemSet};
 use crate::world::unsafe_world_cell::UnsafeWorldCell;
 use crate::{archetype::ArchetypeComponentId, component::ComponentId, query::Access, world::World};
 
-use std::any::TypeId;
+use std::any::{Any, TypeId};
 use std::borrow::Cow;
 
 use super::IntoSystem;
@@ -105,7 +105,7 @@ pub trait System: Send + Sync + 'static {
     fn default_configs(&self, _config: &mut ConfigMap) {}
 
     /// Receives custom configurations from [`ScheduleBuildPass`]es.
-    fn set_configs(&mut self, _config: &mut ConfigMap){}
+    fn set_configs(&mut self, _config: Box<dyn Any>){}
 
     /// Gets the tick indicating the last time this system ran.
     fn get_last_run(&self) -> Tick;

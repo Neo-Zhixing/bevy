@@ -1,4 +1,4 @@
-use std::{borrow::Cow, cell::UnsafeCell, marker::PhantomData};
+use std::{any::Any, borrow::Cow, cell::UnsafeCell, marker::PhantomData};
 
 use bevy_ptr::UnsafeCellDeref;
 use bevy_utils::ConfigMap;
@@ -232,7 +232,7 @@ where
         self.a.default_configs(config);
         self.b.default_configs(config);
     }
-    fn set_configs(&mut self, config: &mut ConfigMap) {
+    fn set_configs(&mut self, config: Box<dyn Any>) {
         self.a.set_configs(config);
     }
 

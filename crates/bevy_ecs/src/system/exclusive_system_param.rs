@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{
     prelude::{FromWorld, QueryState},
     query::{QueryData, QueryFilter},
@@ -27,7 +29,7 @@ pub trait ExclusiveSystemParam: Sized {
     /// Registers any additional configurations on the systems using this [`ExclusiveSystemParam`].
     fn default_configs(_config: &mut ConfigMap){}
     /// Receives information from custom [`ScheduleBuildPass`].
-    fn set_configs(_state: &mut Self::State, _config: &mut ConfigMap){}
+    fn set_configs(_state: &mut Self::State, _config: &mut Option<Box<dyn Any>>){}
 }
 
 /// Shorthand way of accessing the associated type [`ExclusiveSystemParam::Item`]
@@ -105,8 +107,8 @@ macro_rules! impl_exclusive_system_param_tuple {
             }
             
             #[inline]
-            fn set_configs(($($param,)*): &mut Self::State, default_configs: &mut ConfigMap) {
-                $($param::set_configs($param, default_configs);)*
+            fn set_configs(($($param,)*): &mut Self::State, default_configs: &mut Option<Box<dyn Any>>) {
+                $(if default_configs.is_some() { $param::set_configs($param, default_configs); })*
             }
         }
     };

@@ -9,7 +9,7 @@ use crate::{
 };
 
 use bevy_utils::{all_tuples, ConfigMap};
-use std::{any::TypeId, borrow::Cow, marker::PhantomData};
+use std::{any::{Any, TypeId}, borrow::Cow, marker::PhantomData};
 
 #[cfg(feature = "trace")]
 use bevy_utils::tracing::{info_span, Span};
@@ -557,9 +557,10 @@ where
     fn default_configs(&self, configs: &mut ConfigMap) {
         F::Param::default_configs(configs);
     }
-    fn set_configs(&mut self, configs: &mut ConfigMap) {
+    fn set_configs(&mut self, configs: Box<dyn Any>) {
+        let mut configs = Some(configs);
         if let Some(state) = &mut self.param_state {
-            F::Param::set_configs(state, configs);
+            F::Param::set_configs(state, &mut configs);
         }
     }
 
