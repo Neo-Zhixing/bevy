@@ -1315,6 +1315,7 @@ impl ScheduleGraph {
             system_dependents,
             sets_with_conditions_of_systems,
             systems_in_sets_with_conditions,
+            system_idx_map: dg_system_idx_map,
         }
     }
 

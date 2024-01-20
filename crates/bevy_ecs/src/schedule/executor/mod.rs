@@ -6,6 +6,7 @@ pub use self::multi_threaded::{MainThreadExecutor, MultiThreadedExecutor};
 pub use self::simple::SimpleExecutor;
 pub use self::single_threaded::SingleThreadedExecutor;
 
+use bevy_utils::HashMap;
 use fixedbitset::FixedBitSet;
 
 use crate::{
@@ -51,28 +52,29 @@ pub enum ExecutorKind {
 #[derive(Default)]
 pub struct SystemSchedule {
     /// List of system node ids.
-    pub(super) system_ids: Vec<NodeId>,
+    pub system_ids: Vec<NodeId>,
+    pub system_idx_map: HashMap<NodeId, usize>,
     /// Indexed by system node id.
-    pub(super) systems: Vec<BoxedSystem>,
+    pub systems: Vec<BoxedSystem>,
     /// Indexed by system node id.
-    pub(super) system_conditions: Vec<Vec<BoxedCondition>>,
+    pub system_conditions: Vec<Vec<BoxedCondition>>,
     /// Indexed by system node id.
-    pub(super) system_dependencies: Vec<usize>,
+    pub system_dependencies: Vec<usize>,
     /// Indexed by system node id.
-    pub(super) system_dependents: Vec<Vec<usize>>,
+    pub system_dependents: Vec<Vec<usize>>,
     /// Indexed by system node id.
-    pub(super) sets_with_conditions_of_systems: Vec<FixedBitSet>,
+    pub sets_with_conditions_of_systems: Vec<FixedBitSet>,
     /// List of system set node ids.
-    pub(super) set_ids: Vec<NodeId>,
+    pub set_ids: Vec<NodeId>,
     /// Indexed by system set node id.
-    pub(super) set_conditions: Vec<Vec<BoxedCondition>>,
+    pub set_conditions: Vec<Vec<BoxedCondition>>,
     /// Indexed by system set node id.
-    pub(super) systems_in_sets_with_conditions: Vec<FixedBitSet>,
+    pub systems_in_sets_with_conditions: Vec<FixedBitSet>,
 }
 
 impl SystemSchedule {
     /// Creates an empty [`SystemSchedule`].
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             systems: Vec::new(),
             system_conditions: Vec::new(),
@@ -83,6 +85,7 @@ impl SystemSchedule {
             system_dependents: Vec::new(),
             sets_with_conditions_of_systems: Vec::new(),
             systems_in_sets_with_conditions: Vec::new(),
+            system_idx_map: HashMap::new(),
         }
     }
 }
