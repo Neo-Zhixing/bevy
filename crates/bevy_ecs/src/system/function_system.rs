@@ -557,10 +557,9 @@ where
     fn default_configs(&self, configs: &mut ConfigMap) {
         F::Param::default_configs(configs);
     }
-    fn set_configs(&mut self, configs: Box<dyn Any>) {
-        let mut configs = Some(configs);
+    fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
         if let Some(state) = &mut self.param_state {
-            F::Param::set_configs(state, &mut configs);
+            F::Param::configurate(state, config, world);
         }
     }
 

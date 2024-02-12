@@ -232,8 +232,9 @@ where
         self.a.default_configs(config);
         self.b.default_configs(config);
     }
-    fn set_configs(&mut self, config: Box<dyn Any>) {
-        self.a.set_configs(config);
+    fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
+        self.a.configurate(config, world);
+        self.b.configurate(config, world);
     }
 
     fn get_last_run(&self) -> Tick {

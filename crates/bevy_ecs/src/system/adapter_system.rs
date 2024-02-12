@@ -3,7 +3,7 @@ use std::{any::Any, borrow::Cow};
 use bevy_utils::ConfigMap;
 
 use super::{ReadOnlySystem, System};
-use crate::{schedule::InternedSystemSet, world::unsafe_world_cell::UnsafeWorldCell};
+use crate::{prelude::World, schedule::InternedSystemSet, world::unsafe_world_cell::UnsafeWorldCell};
 
 /// Customizes the behavior of an [`AdapterSystem`]
 ///
@@ -148,8 +148,8 @@ where
     fn default_configs(&self, configs: &mut ConfigMap) {
         self.system.default_configs(configs);
     }
-    fn set_configs(&mut self, config: Box<dyn Any>) {
-        self.system.set_configs(config);
+    fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
+        self.system.configurate(config, world);
     }
 
     fn get_last_run(&self) -> crate::component::Tick {

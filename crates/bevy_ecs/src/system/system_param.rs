@@ -111,7 +111,7 @@ pub unsafe trait SystemParam: Sized {
 
     /// Receives information from custom render passes. Implementation may call [`Option::take`] on the config
     /// to take ownership. `set_config` will then no longer be called on other system params.
-    fn set_configs(_state: &mut Self::State, _config: &mut Option<Box<dyn Any>>){}
+    fn configurate(_state: &mut Self::State, _config: &mut dyn Any, _world: &mut World){}
 
     /// For the specified [`Archetype`], registers the components accessed by this [`SystemParam`] (if applicable).
     #[inline]
@@ -1415,8 +1415,8 @@ macro_rules! impl_system_param_tuple {
                 $($param::default_configs(_default_configs);)*
             }
             #[inline]
-            fn set_configs(($($param,)*): &mut Self::State, _default_configs: &mut Option<Box<dyn ::std::any::Any>>) {
-                $(if _default_configs.is_some() { $param::set_configs($param, _default_configs); })*
+            fn configurate(($($param,)*): &mut Self::State, _config: &mut dyn ::std::any::Any, _world: &mut World) {
+                $($param::configurate($param, _config, _world);)*
             }
 
             #[inline]

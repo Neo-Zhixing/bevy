@@ -158,10 +158,9 @@ where
         F::Param::default_configs(config);
     }
 
-    fn set_configs(&mut self, config: Box<dyn Any>) {
-        let mut config = Some(config);
+    fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
         if let Some(state) = &mut self.param_state {
-            F::Param::set_configs(state, &mut config);
+            F::Param::configurate(state, config, world);
         }
     }
 
