@@ -26,7 +26,7 @@ impl ConfigMap {
         Some(*item)
     }
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
-    pub fn entry<T: Send + Sync + Clone + 'static>(&mut self) -> ConfigMapEntry<T> {
+    pub fn entry<T: Send + Sync + 'static>(&mut self) -> ConfigMapEntry<T> {
         let entry = self.0.entry(TypeId::of::<T>());
         ConfigMapEntry {
             entry,
@@ -34,7 +34,7 @@ impl ConfigMap {
         }
     }
     /// Checks if the map contains a value of the given type.
-    pub fn has<T: Send + Sync + Clone + 'static>(&self) -> bool {
+    pub fn has<T: Send + Sync + 'static>(&self) -> bool {
         self.0.contains_key(&TypeId::of::<T>())
     }
     /// Number of distinct types stored in the map.
@@ -44,12 +44,12 @@ impl ConfigMap {
 }
 
 /// A view into a single entry in a config map, which may either be vacant or occupied.
-pub struct ConfigMapEntry<'a, T: Send + Sync + Clone + 'static> {
+pub struct ConfigMapEntry<'a, T: Send + Sync + 'static> {
     entry: std::collections::btree_map::Entry<'a, TypeId, Box<dyn Any + Send + Sync>>,
     _marker: std::marker::PhantomData<T>,
 }
 
-impl<'a, T: Send + Sync + Clone + 'static> ConfigMapEntry<'a, T> {
+impl<'a, T: Send + Sync + 'static> ConfigMapEntry<'a, T> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns a mutable reference to the value in the entry.
     pub fn or_insert(self, default: T) -> &'a mut T {
         self.entry.or_insert_with(|| Box::new(default)).downcast_mut::<T>().unwrap()

@@ -1851,9 +1851,9 @@ pub enum LogLevel {
 /// A pass for modular modification of the dependency graph.
 pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
     /// Custom options for dependencies between sets or systems.
-    type EdgeOptions: Send + Sync + Clone + 'static;
+    type EdgeOptions: Send + Sync + 'static;
     /// Custom options for individual systems.
-    type NodeOptions: Send + Sync + Clone + 'static;
+    type NodeOptions: Send + Sync + 'static;
 
     /// Initialize the pass. Called once everytime the schedule was run.
     fn initialize(
