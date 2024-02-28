@@ -20,13 +20,13 @@ use super::{In, IntoSystem, ReadOnlySystem};
 #[derive(Clone)]
 pub struct SystemMeta {
     pub(crate) name: Cow<'static, str>,
-    pub(crate) component_access_set: FilteredAccessSet<ComponentId>,
-    pub(crate) archetype_component_access: Access<ArchetypeComponentId>,
+    pub component_access_set: FilteredAccessSet<ComponentId>,
+    pub archetype_component_access: Access<ArchetypeComponentId>,
     // NOTE: this must be kept private. making a SystemMeta non-send is irreversible to prevent
     // SystemParams from overriding each other
     is_send: bool,
     has_deferred: bool,
-    pub(crate) last_run: Tick,
+    pub last_run: Tick,
     #[cfg(feature = "trace")]
     pub(crate) system_span: Span,
     #[cfg(feature = "trace")]
@@ -34,7 +34,7 @@ pub struct SystemMeta {
 }
 
 impl SystemMeta {
-    pub(crate) fn new<T>() -> Self {
+    pub fn new<T>() -> Self {
         let name = std::any::type_name::<T>();
         Self {
             name: name.into(),

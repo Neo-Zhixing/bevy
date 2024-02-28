@@ -561,6 +561,10 @@ impl<T: SparseSetIndex> FilteredAccessSet<T> {
         self.filtered_accesses
             .extend(filtered_access_set.filtered_accesses);
     }
+    pub fn extend_combined_access(&mut self, access: &Access<T>) {
+        self.combined_access
+            .extend(access);
+    }
 
     /// Removes all accesses stored in this set.
     pub fn clear(&mut self) {
