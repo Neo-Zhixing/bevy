@@ -1,8 +1,8 @@
 use crate::{
-    archetype::{Archetype, ArchetypeComponentId},
+    archetype::Archetype,
     component::{Component, ComponentId, ComponentStorage, StorageType, Tick},
     entity::Entity,
-    query::{Access, DebugCheckedUnwrap, FilteredAccess, WorldQuery},
+    query::{DebugCheckedUnwrap, FilteredAccess, WorldQuery},
     storage::{Column, ComponentSparseSet, Table, TableRow},
     world::{unsafe_world_cell::UnsafeWorldCell, World},
 };
@@ -70,8 +70,6 @@ use std::{cell::UnsafeCell, marker::PhantomData};
 /// [`matches_component_set`]: Self::matches_component_set
 /// [`Query`]: crate::system::Query
 /// [`State`]: Self::State
-/// [`update_archetype_component_access`]: Self::update_archetype_component_access
-/// [`update_component_access`]: Self::update_component_access
 
 pub trait QueryFilter: WorldQuery {
     /// Returns true if (and only if) this Filter relies strictly on archetypes to limit which
@@ -123,7 +121,7 @@ pub trait QueryFilter: WorldQuery {
 pub struct With<T>(PhantomData<T>);
 
 /// SAFETY:
-/// `update_component_access` and `update_archetype_component_access` do not add any accesses.
+/// `update_component_access` does not add any accesses.
 /// This is sound because `fetch` does not access any components.
 /// `update_component_access` adds a `With` filter for `T`.
 /// This is sound because `matches_component_set` returns whether the set contains the component.
@@ -175,16 +173,12 @@ unsafe impl<T: Component> WorldQuery for With<T> {
         access.and_with(id);
     }
 
-    #[inline]
-    fn update_archetype_component_access(
-        _state: &ComponentId,
-        _archetype: &Archetype,
-        _access: &mut Access<ArchetypeComponentId>,
-    ) {
-    }
-
     fn init_state(world: &mut World) -> ComponentId {
         world.init_component::<T>()
+    }
+
+    fn get_state(world: &World) -> Option<Self::State> {
+        world.component_id::<T>()
     }
 
     fn matches_component_set(
@@ -235,7 +229,7 @@ impl<T: Component> QueryFilter for With<T> {
 pub struct Without<T>(PhantomData<T>);
 
 /// SAFETY:
-/// `update_component_access` and `update_archetype_component_access` do not add any accesses.
+/// `update_component_access` does not add any accesses.
 /// This is sound because `fetch` does not access any components.
 /// `update_component_access` adds a `Without` filter for `T`.
 /// This is sound because `matches_component_set` returns whether the set does not contain the component.
@@ -287,16 +281,12 @@ unsafe impl<T: Component> WorldQuery for Without<T> {
         access.and_without(id);
     }
 
-    #[inline]
-    fn update_archetype_component_access(
-        _state: &ComponentId,
-        _archetype: &Archetype,
-        _access: &mut Access<ArchetypeComponentId>,
-    ) {
-    }
-
     fn init_state(world: &mut World) -> ComponentId {
         world.init_component::<T>()
+    }
+
+    fn get_state(world: &World) -> Option<Self::State> {
+        world.component_id::<T>()
     }
 
     fn matches_component_set(
@@ -374,7 +364,7 @@ macro_rules! impl_query_filter_tuple {
         #[allow(clippy::unused_unit)]
         /// SAFETY:
         /// `fetch` accesses are a subset of the subqueries' accesses
-        /// This is sound because `update_component_access` and `update_archetype_component_access` adds accesses according to the implementations of all the subqueries.
+        /// This is sound because `update_component_access` adds accesses according to the implementations of all the subqueries.
         /// `update_component_access` replace the filters with a disjunction where every element is a conjunction of the previous filters and the filters of one of the subqueries.
         /// This is sound because `matches_component_set` returns a disjunction of the results of the subqueries' implementations.
         unsafe impl<$($filter: QueryFilter),*> WorldQuery for Or<($($filter,)*)> {
@@ -449,6 +439,7 @@ macro_rules! impl_query_filter_tuple {
                         _new_access.extend_access(&intermediate);
                     } else {
                         $filter::update_component_access($filter, &mut _new_access);
+                        _new_access.required = access.required.clone();
                         _not_first = true;
                     }
                 )*
@@ -456,13 +447,12 @@ macro_rules! impl_query_filter_tuple {
                 *access = _new_access;
             }
 
-            fn update_archetype_component_access(state: &Self::State, archetype: &Archetype, access: &mut Access<ArchetypeComponentId>) {
-                let ($($filter,)*) = state;
-                $($filter::update_archetype_component_access($filter, archetype, access);)*
-            }
-
             fn init_state(world: &mut World) -> Self::State {
                 ($($filter::init_state(world),)*)
+            }
+
+            fn get_state(world: &World) -> Option<Self::State> {
+                Some(($($filter::get_state(world)?,)*))
             }
 
             fn matches_component_set(_state: &Self::State, _set_contains_id: &impl Fn(ComponentId) -> bool) -> bool {
@@ -587,7 +577,7 @@ pub struct AddedFetch<'w> {
 
 /// SAFETY:
 /// `fetch` accesses a single component in a readonly way.
-/// This is sound because `update_component_access` and `update_archetype_component_access` add read access for that component and panic when appropriate.
+/// This is sound because `update_component_access` adds read access for that component and panics when appropriate.
 /// `update_component_access` adds a `With` filter for a component.
 /// This is sound because `matches_component_set` returns whether the set contains that component.
 unsafe impl<T: Component> WorldQuery for Added<T> {
@@ -677,19 +667,12 @@ unsafe impl<T: Component> WorldQuery for Added<T> {
         access.add_read(id);
     }
 
-    #[inline]
-    fn update_archetype_component_access(
-        &id: &ComponentId,
-        archetype: &Archetype,
-        access: &mut Access<ArchetypeComponentId>,
-    ) {
-        if let Some(archetype_component_id) = archetype.get_archetype_component_id(id) {
-            access.add_read(archetype_component_id);
-        }
-    }
-
     fn init_state(world: &mut World) -> ComponentId {
         world.init_component::<T>()
+    }
+
+    fn get_state(world: &World) -> Option<ComponentId> {
+        world.component_id::<T>()
     }
 
     fn matches_component_set(
@@ -794,7 +777,7 @@ pub struct ChangedFetch<'w> {
 
 /// SAFETY:
 /// `fetch` accesses a single component in a readonly way.
-/// This is sound because `update_component_access` and `update_archetype_component_access` add read access for that component and panic when appropriate.
+/// This is sound because `update_component_access` add read access for that component and panics when appropriate.
 /// `update_component_access` adds a `With` filter for a component.
 /// This is sound because `matches_component_set` returns whether the set contains that component.
 unsafe impl<T: Component> WorldQuery for Changed<T> {
@@ -884,19 +867,12 @@ unsafe impl<T: Component> WorldQuery for Changed<T> {
         access.add_read(id);
     }
 
-    #[inline]
-    fn update_archetype_component_access(
-        &id: &ComponentId,
-        archetype: &Archetype,
-        access: &mut Access<ArchetypeComponentId>,
-    ) {
-        if let Some(archetype_component_id) = archetype.get_archetype_component_id(id) {
-            access.add_read(archetype_component_id);
-        }
-    }
-
     fn init_state(world: &mut World) -> ComponentId {
         world.init_component::<T>()
+    }
+
+    fn get_state(world: &World) -> Option<ComponentId> {
+        world.component_id::<T>()
     }
 
     fn matches_component_set(

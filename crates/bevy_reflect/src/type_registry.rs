@@ -1,6 +1,6 @@
 use crate::{serde::Serializable, Reflect, TypeInfo, TypePath, Typed};
 use bevy_ptr::{Ptr, PtrMut};
-use bevy_utils::{HashMap, HashSet};
+use bevy_utils::{HashMap, HashSet, TypeIdMap};
 use downcast_rs::{impl_downcast, Downcast};
 use serde::Deserialize;
 use std::{
@@ -22,7 +22,7 @@ use std::{
 /// [Registering]: TypeRegistry::register
 /// [crate-level documentation]: crate
 pub struct TypeRegistry {
-    registrations: HashMap<TypeId, TypeRegistration>,
+    registrations: TypeIdMap<TypeRegistration>,
     short_path_to_id: HashMap<&'static str, TypeId>,
     type_path_to_id: HashMap<&'static str, TypeId>,
     ambiguous_names: HashSet<&'static str>,
@@ -101,8 +101,8 @@ impl TypeRegistry {
     }
 
     /// Registers the type `T`, adding reflect data as specified in the [`Reflect`] derive:
-    /// ```rust,ignore
-    /// #[derive(Reflect)]
+    /// ```ignore (Neither bevy_ecs nor serde "derive" are available.)
+    /// #[derive(Component, serde::Serialize, serde::Deserialize, Reflect)]
     /// #[reflect(Component, Serialize, Deserialize)] // will register ReflectComponent, ReflectSerialize, ReflectDeserialize
     /// ```
     pub fn register<T>(&mut self)
@@ -143,7 +143,7 @@ impl TypeRegistry {
     /// this method can be used to insert additional type data.
     ///
     /// # Example
-    /// ```rust
+    /// ```
     /// use bevy_reflect::{TypeRegistry, ReflectSerialize, ReflectDeserialize};
     ///
     /// let mut type_registry = TypeRegistry::default();
@@ -211,7 +211,7 @@ impl TypeRegistry {
     /// If the short type path is ambiguous, or if no type with the given path
     /// has been registered, returns `None`.
     ///
-    /// [type path]: TypePath::short_type_path
+    /// [short type path]: TypePath::short_type_path
     pub fn get_with_short_type_path(&self, short_type_path: &str) -> Option<&TypeRegistration> {
         self.short_path_to_id
             .get(short_type_path)
@@ -224,7 +224,7 @@ impl TypeRegistry {
     /// If the short type path is ambiguous, or if no type with the given path
     /// has been registered, returns `None`.
     ///
-    /// [type path]: TypePath::short_type_path
+    /// [short type path]: TypePath::short_type_path
     pub fn get_with_short_type_path_mut(
         &mut self,
         short_type_path: &str,
@@ -232,6 +232,32 @@ impl TypeRegistry {
         self.short_path_to_id
             .get(short_type_path)
             .and_then(|id| self.registrations.get_mut(id))
+    }
+
+    /// Returns `true` if the given [short type path] is ambiguous, that is, it matches multiple registered types.
+    ///
+    /// # Example
+    /// ```
+    /// # use bevy_reflect::TypeRegistry;
+    /// # mod foo {
+    /// #     use bevy_reflect::Reflect;
+    /// #     #[derive(Reflect)]
+    /// #     pub struct MyType;
+    /// # }
+    /// # mod bar {
+    /// #     use bevy_reflect::Reflect;
+    /// #     #[derive(Reflect)]
+    /// #     pub struct MyType;
+    /// # }
+    /// let mut type_registry = TypeRegistry::default();
+    /// type_registry.register::<foo::MyType>();
+    /// type_registry.register::<bar::MyType>();
+    /// assert_eq!(type_registry.is_ambiguous("MyType"), true);
+    /// ```
+    ///
+    /// [short type path]: TypePath::short_type_path
+    pub fn is_ambiguous(&self, short_type_path: &str) -> bool {
+        self.ambiguous_names.contains(short_type_path)
     }
 
     /// Returns a reference to the [`TypeData`] of type `T` associated with the given [`TypeId`].
@@ -318,7 +344,7 @@ impl TypeRegistryArc {
 ///
 /// [crate-level documentation]: crate
 pub struct TypeRegistration {
-    data: HashMap<TypeId, Box<dyn TypeData>>,
+    data: TypeIdMap<Box<dyn TypeData>>,
     type_info: &'static TypeInfo,
 }
 
@@ -373,7 +399,7 @@ impl TypeRegistration {
     /// Creates type registration information for `T`.
     pub fn of<T: Reflect + Typed + TypePath>() -> Self {
         Self {
-            data: HashMap::default(),
+            data: Default::default(),
             type_info: T::type_info(),
         }
     }
@@ -381,7 +407,7 @@ impl TypeRegistration {
 
 impl Clone for TypeRegistration {
     fn clone(&self) -> Self {
-        let mut data = HashMap::default();
+        let mut data = TypeIdMap::default();
         for (id, type_data) in &self.data {
             data.insert(*id, (*type_data).clone_type_data());
         }
@@ -499,7 +525,7 @@ impl<T: for<'a> Deserialize<'a> + Reflect> FromType<T> for ReflectDeserialize {
 /// from a pointer.
 ///
 /// # Example
-/// ```rust
+/// ```
 /// use bevy_reflect::{TypeRegistry, Reflect, ReflectFromPtr};
 /// use bevy_ptr::Ptr;
 /// use std::ptr::NonNull;
@@ -540,7 +566,8 @@ impl ReflectFromPtr {
     /// `val` must be a pointer to value of the type that the [`ReflectFromPtr`] was constructed for.
     /// This can be verified by checking that the type id returned by [`ReflectFromPtr::type_id`] is the expected one.
     pub unsafe fn as_reflect<'a>(&self, val: Ptr<'a>) -> &'a dyn Reflect {
-        (self.from_ptr)(val)
+        // SAFETY: contract uphold by the caller.
+        unsafe { (self.from_ptr)(val) }
     }
 
     /// Convert `PtrMut` into `&mut dyn Reflect`.
@@ -550,7 +577,8 @@ impl ReflectFromPtr {
     /// `val` must be a pointer to a value of the type that the [`ReflectFromPtr`] was constructed for
     /// This can be verified by checking that the type id returned by [`ReflectFromPtr::type_id`] is the expected one.
     pub unsafe fn as_reflect_mut<'a>(&self, val: PtrMut<'a>) -> &'a mut dyn Reflect {
-        (self.from_ptr_mut)(val)
+        // SAFETY: contract uphold by the caller.
+        unsafe { (self.from_ptr_mut)(val) }
     }
     /// Get a function pointer to turn a `Ptr` into `&dyn Reflect` for
     /// the type this [`ReflectFromPtr`] was constructed for.

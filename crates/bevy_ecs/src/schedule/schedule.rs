@@ -27,9 +27,11 @@ use crate::{
     world::World,
 };
 
+pub use stepping::Stepping;
 use super::auto_insert_apply_deferred::AutoInsertApplyDeferredPass;
 
-/// Resource that stores [`Schedule`]s mapped to [`ScheduleLabel`]s.
+/// Resource that stores [`Schedule`]s mapped to [`ScheduleLabel`]s excluding the current running [`Schedule`].
+
 #[derive(Default, Resource)]
 pub struct Schedules {
     inner: HashMap<InternedScheduleLabel, Schedule>,
@@ -51,7 +53,7 @@ impl Schedules {
     /// If the map already had an entry for `label`, `schedule` is inserted,
     /// and the old schedule is returned. Otherwise, `None` is returned.
     pub fn insert(&mut self, schedule: Schedule) -> Option<Schedule> {
-        self.inner.insert(schedule.name, schedule)
+        self.inner.insert(schedule.label, schedule)
     }
 
     /// Removes the schedule corresponding to the `label` from the map, returning it if it existed.
@@ -209,7 +211,7 @@ pub enum Chain {
 /// }
 /// ```
 pub struct Schedule {
-    name: InternedScheduleLabel,
+    label: InternedScheduleLabel,
     graph: ScheduleGraph,
     executable: SystemSchedule,
     executor: Box<dyn SystemExecutor>,
@@ -233,7 +235,7 @@ impl Schedule {
     /// Constructs an empty `Schedule`.
     pub fn new(label: impl ScheduleLabel) -> Self {
         let mut this = Self {
-            name: label.intern(),
+            label: label.intern(),
             graph: ScheduleGraph::new(),
             executable: SystemSchedule::new(),
             executor: make_executor(ExecutorKind::default()),
@@ -245,9 +247,45 @@ impl Schedule {
         this
     }
 
+    /// Get the `InternedScheduleLabel` for this `Schedule`.
+    pub fn label(&self) -> InternedScheduleLabel {
+        self.label
+    }
+
     /// Add a collection of systems to the schedule.
     pub fn add_systems<M>(&mut self, systems: impl IntoSystemConfigs<M>) -> &mut Self {
         self.graph.process_configs(systems.into_configs(), false);
+        self
+    }
+
+    /// Suppress warnings and errors that would result from systems in these sets having ambiguities
+    /// (conflicting access but indeterminate order) with systems in `set`.
+    #[track_caller]
+    pub fn ignore_ambiguity<M1, M2, S1, S2>(&mut self, a: S1, b: S2) -> &mut Self
+    where
+        S1: IntoSystemSet<M1>,
+        S2: IntoSystemSet<M2>,
+    {
+        let a = a.into_system_set();
+        let b = b.into_system_set();
+
+        let Some(&a_id) = self.graph.system_set_ids.get(&a.intern()) else {
+            panic!(
+                "Could not mark system as ambiguous, `{:?}` was not found in the schedule.
+                Did you try to call `ambiguous_with` before adding the system to the world?",
+                a
+            );
+        };
+        let Some(&b_id) = self.graph.system_set_ids.get(&b.intern()) else {
+            panic!(
+                "Could not mark system as ambiguous, `{:?}` was not found in the schedule.
+                Did you try to call `ambiguous_with` before adding the system to the world?",
+                b
+            );
+        };
+
+        self.graph.ambiguous_with.add_edge(a_id, b_id, ());
+
         self
     }
 
@@ -315,12 +353,25 @@ impl Schedule {
     /// Runs all systems in this schedule on the `world`, using its current execution strategy.
     pub fn run(&mut self, world: &mut World) {
         #[cfg(feature = "trace")]
-        let _span = info_span!("schedule", name = ?self.name).entered();
+        let _span = info_span!("schedule", name = ?self.label).entered();
 
         world.check_change_ticks();
         self.initialize(world)
-            .unwrap_or_else(|e| panic!("Error when initializing schedule {:?}: {e}", self.name));
-        self.executor.run(&mut self.executable, world);
+            .unwrap_or_else(|e| panic!("Error when initializing schedule {:?}: {e}", self.label));
+
+        #[cfg(not(feature = "bevy_debug_stepping"))]
+        self.executor.run(&mut self.executable, world, None);
+
+        #[cfg(feature = "bevy_debug_stepping")]
+        {
+            let skip_systems = match world.get_resource_mut::<Stepping>() {
+                None => None,
+                Some(mut stepping) => stepping.skipped_systems(self),
+            };
+
+            self.executor
+                .run(&mut self.executable, world, skip_systems.as_ref());
+        }
     }
 
     /// Initializes any newly-added systems and conditions, rebuilds the executable schedule,
@@ -338,7 +389,7 @@ impl Schedule {
                 &mut self.executable,
                 world,
                 &ignored_ambiguities,
-                self.name,
+                self.label,
             )?;
             self.graph.changed = false;
             self.executor_initialized = false;
@@ -362,6 +413,11 @@ impl Schedule {
     /// Returns a mutable reference to the [`ScheduleGraph`].
     pub fn graph_mut(&mut self) -> &mut ScheduleGraph {
         &mut self.graph
+    }
+
+    /// Returns the [`SystemSchedule`].
+    pub(crate) fn executable(&self) -> &SystemSchedule {
+        &self.executable
     }
 
     /// Iterates the change ticks of all systems in the schedule and clamps any older than
@@ -398,6 +454,36 @@ impl Schedule {
     pub fn apply_deferred(&mut self, world: &mut World) {
         for system in &mut self.executable.systems {
             system.apply_deferred(world);
+        }
+    }
+
+    /// Returns an iterator over all systems in this schedule.
+    ///
+    /// Note: this method will return [`ScheduleNotInitialized`] if the
+    /// schedule has never been initialized or run.
+    pub fn systems(
+        &self,
+    ) -> Result<impl Iterator<Item = (NodeId, &BoxedSystem)> + Sized, ScheduleNotInitialized> {
+        if !self.executor_initialized {
+            return Err(ScheduleNotInitialized);
+        }
+
+        let iter = self
+            .executable
+            .system_ids
+            .iter()
+            .zip(&self.executable.systems)
+            .map(|(node_id, system)| (*node_id, system));
+
+        Ok(iter)
+    }
+
+    /// Returns the number of systems in this schedule.
+    pub fn systems_len(&self) -> usize {
+        if !self.executor_initialized {
+            self.graph.systems.len()
+        } else {
+            self.executable.systems.len()
         }
     }
 }
@@ -1997,6 +2083,12 @@ impl ScheduleBuildSettings {
         }
     }
 }
+
+/// Error to denote that [`Schedule::initialize`] or [`Schedule::run`] has not yet been called for
+/// this schedule.
+#[derive(Error, Debug)]
+#[error("executable schedule has not been built")]
+pub struct ScheduleNotInitialized;
 
 #[cfg(test)]
 mod tests {

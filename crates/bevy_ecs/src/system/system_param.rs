@@ -18,7 +18,11 @@ pub use bevy_ecs_macros::SystemParam;
 use bevy_ptr::UnsafeCellDeref;
 use bevy_utils::{all_tuples, synccell::SyncCell, ConfigMap};
 use std::{
-    any::Any, borrow::Cow, fmt::Debug, marker::PhantomData, ops::{Deref, DerefMut}
+    any::Any,
+    borrow::Cow,
+    fmt::Debug,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
 };
 
 /// A parameter that can be used in a [`System`](super::System).
@@ -34,6 +38,35 @@ use std::{
 /// Derived `SystemParam` structs may have two lifetimes: `'w` for data stored in the [`World`],
 /// and `'s` for data stored in the parameter's state.
 ///
+/// The following list shows the most common [`SystemParam`]s and which lifetime they require
+///
+/// ```
+/// # use bevy_ecs::prelude::*;
+/// # #[derive(Resource)]
+/// # struct SomeResource;
+/// # #[derive(Event)]
+/// # struct SomeEvent;
+/// # #[derive(Resource)]
+/// # struct SomeOtherResource;
+/// # use bevy_ecs::system::SystemParam;
+/// # #[derive(SystemParam)]
+/// # struct ParamsExample<'w, 's> {
+/// #    query:
+/// Query<'w, 's, Entity>,
+/// #    res:
+/// Res<'w, SomeResource>,
+/// #    res_mut:
+/// ResMut<'w, SomeOtherResource>,
+/// #    local:
+/// Local<'s, u8>,
+/// #    commands:
+/// Commands<'w, 's>,
+/// #    eventreader:
+/// EventReader<'w, 's, SomeEvent>,
+/// #    eventwriter:
+/// EventWriter<'w, SomeEvent>
+/// # }
+///```
 /// ## `PhantomData`
 ///
 /// [`PhantomData`] is a special type of `SystemParam` that does nothing.
@@ -204,7 +237,7 @@ unsafe impl<D: QueryData + 'static, F: QueryFilter + 'static> SystemParam for Qu
         // SAFETY: We have registered all of the query's world accesses,
         // so the caller ensures that `world` has permission to access any
         // world data that the query needs.
-        Query::new(world, state, system_meta.last_run, change_tick, false)
+        Query::new(world, state, system_meta.last_run, change_tick)
     }
 }
 
@@ -912,6 +945,14 @@ impl<'a, T: SystemBuffer> DerefMut for Deferred<'a, T> {
     }
 }
 
+impl<T: SystemBuffer> Deferred<'_, T> {
+    /// Returns a [`Deferred<T>`] with a smaller lifetime.
+    /// This is useful if you have `&mut Deferred<T>` but need `Deferred<T>`.
+    pub fn reborrow(&mut self) -> Deferred<T> {
+        Deferred(self.0)
+    }
+}
+
 // SAFETY: Only local state is accessed.
 unsafe impl<T: SystemBuffer> ReadOnlySystemParam for Deferred<'_, T> {}
 
@@ -1307,91 +1348,6 @@ unsafe impl SystemParam for SystemChangeTick {
         }
     }
 }
-
-/// [`SystemParam`] that returns the name of the system which it is used in.
-///
-/// This is not a reliable identifier, it is more so useful for debugging or logging.
-///
-/// # Examples
-///
-/// ```
-/// # use bevy_ecs::system::SystemName;
-/// # use bevy_ecs::system::SystemParam;
-///
-/// #[derive(SystemParam)]
-/// struct Logger<'s> {
-///     system_name: SystemName<'s>,
-/// }
-///
-/// impl<'s> Logger<'s> {
-///     fn log(&mut self, message: &str) {
-///         eprintln!("{}: {}", self.system_name, message);
-///     }
-/// }
-///
-/// fn system1(mut logger: Logger) {
-///     // Prints: "crate_name::mod_name::system1: Hello".
-///     logger.log("Hello");
-/// }
-/// ```
-#[derive(Debug)]
-pub struct SystemName<'s>(&'s str);
-
-impl<'s> SystemName<'s> {
-    /// Gets the name of the system.
-    pub fn name(&self) -> &str {
-        self.0
-    }
-}
-
-impl<'s> Deref for SystemName<'s> {
-    type Target = str;
-    fn deref(&self) -> &Self::Target {
-        self.name()
-    }
-}
-
-impl<'s> AsRef<str> for SystemName<'s> {
-    fn as_ref(&self) -> &str {
-        self.name()
-    }
-}
-
-impl<'s> From<SystemName<'s>> for &'s str {
-    fn from(name: SystemName<'s>) -> &'s str {
-        name.0
-    }
-}
-
-impl<'s> std::fmt::Display for SystemName<'s> {
-    #[inline(always)]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        std::fmt::Display::fmt(&self.name(), f)
-    }
-}
-
-// SAFETY: no component value access
-unsafe impl SystemParam for SystemName<'_> {
-    type State = Cow<'static, str>;
-    type Item<'w, 's> = SystemName<'s>;
-
-    fn init_state(_world: &mut World, system_meta: &mut SystemMeta) -> Self::State {
-        system_meta.name.clone()
-    }
-
-    #[inline]
-    unsafe fn get_param<'w, 's>(
-        name: &'s mut Self::State,
-        _system_meta: &SystemMeta,
-        _world: UnsafeWorldCell<'w>,
-        _change_tick: Tick,
-    ) -> Self::Item<'w, 's> {
-        SystemName(name)
-    }
-}
-
-// SAFETY: Only reads internal system state
-unsafe impl<'s> ReadOnlySystemParam for SystemName<'s> {}
 
 macro_rules! impl_system_param_tuple {
     ($($param: ident),*) => {
