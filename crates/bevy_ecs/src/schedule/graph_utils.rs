@@ -23,7 +23,7 @@ pub enum NodeId {
 
 impl NodeId {
     /// Returns the internal integer value.
-    pub(crate) fn index(&self) -> usize {
+    pub fn index(&self) -> usize {
         match self {
             NodeId::System(index) | NodeId::Set(index) => *index,
         }

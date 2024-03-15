@@ -1479,7 +1479,7 @@ impl World {
 
     // Shorthand helper function for getting the [`ArchetypeComponentId`] for a resource.
     #[inline]
-    pub(crate) fn get_resource_archetype_component_id(
+    pub fn get_resource_archetype_component_id(
         &self,
         component_id: ComponentId,
     ) -> Option<ArchetypeComponentId> {
@@ -1803,7 +1803,7 @@ impl World {
             })
     }
 
-    pub(crate) fn initialize_resource<R: Resource>(&mut self) -> ComponentId {
+    pub fn initialize_resource<R: Resource>(&mut self) -> ComponentId {
         let component_id = self.components.init_resource::<R>();
         self.initialize_resource_internal(component_id);
         component_id
