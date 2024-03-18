@@ -8,7 +8,7 @@ use crate::{
     world::{unsafe_world_cell::UnsafeWorldCell, World, WorldId},
 };
 
-use bevy_utils::{all_tuples, ConfigMap};
+use bevy_utils::{all_tuples, ConfigMap, tracing::warn};
 use std::{any::{Any, TypeId}, borrow::Cow, marker::PhantomData};
 
 #[cfg(feature = "trace")]
@@ -555,6 +555,8 @@ where
     fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
         if let Some(state) = &mut self.param_state {
             F::Param::configurate(state, config, world);
+        } else {
+            warn!("System configured without being initialized first.");
         }
     }
 

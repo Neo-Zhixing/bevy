@@ -10,7 +10,7 @@ use crate::{
     world::{unsafe_world_cell::UnsafeWorldCell, World},
 };
 
-use bevy_utils::all_tuples;
+use bevy_utils::{all_tuples, tracing::warn};
 use std::{any::{Any, TypeId}, borrow::Cow, marker::PhantomData};
 
 /// A function system that runs with exclusive [`World`] access.
@@ -154,6 +154,8 @@ where
     fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
         if let Some(state) = &mut self.param_state {
             F::Param::configurate(state, config, world);
+        } else {
+            warn!("System configured without being initialized first.");
         }
     }
 

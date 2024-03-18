@@ -1935,7 +1935,7 @@ pub enum LogLevel {
 }
 
 /// A pass for modular modification of the dependency graph.
-pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
+pub trait ScheduleBuildPass: Send + Sync + 'static {
     /// Custom options for dependencies between sets or systems.
     type EdgeOptions: Send + Sync + 'static;
     /// Custom options for individual systems.
@@ -1976,7 +1976,7 @@ pub trait ScheduleBuildPass: Send + Sync + Debug + 'static {
 }
 
 /// Object safe version of [`ScheduleBuildPass`].
-trait ScheduleBuildPassObj: Send + Sync + Debug {
+trait ScheduleBuildPassObj: Send + Sync {
     fn initialize(
         &mut self,
         world: &mut World,
