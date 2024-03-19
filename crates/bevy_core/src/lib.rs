@@ -152,7 +152,7 @@ fn tick_global_task_pools(_main_thread_marker: Option<NonSend<NonSendMarker>>) {
 /// assumptions, one may exploit wrapping arithmetic to determine the number of frames
 /// that have elapsed between two observations – see [`u32::wrapping_sub()`].
 #[derive(Debug, Default, Resource, Clone, Copy)]
-pub struct FrameCount(pub u32);
+pub struct FrameCount(pub u64);
 
 /// Adds frame counting functionality to Apps.
 #[derive(Default)]
