@@ -4,7 +4,7 @@ use crate::{
     self as bevy_ecs,
     change_detection::MAX_CHANGE_AGE,
     storage::{SparseSetIndex, Storages},
-    system::{Local, Resource, SystemParam},
+    system::{InstancedResource, Local, Resource, SystemParam},
     world::{FromWorld, World},
 };
 pub use bevy_ecs_macros::Component;
@@ -398,7 +398,7 @@ impl ComponentDescriptor {
     /// Create a new `ComponentDescriptor` for a resource.
     ///
     /// The [`StorageType`] for resources is always [`TableStorage`].
-    pub fn new_resource<T: Resource>() -> Self {
+    pub fn new_resource<T: 'static>() -> Self {
         Self {
             name: Cow::Borrowed(std::any::type_name::<T>()),
             // PERF: `SparseStorage` may actually be a more
@@ -637,6 +637,12 @@ impl Components {
         }
     }
 
+    pub fn init_instanced_resource<T: InstancedResource>(&mut self) -> ComponentId {
+        unsafe {
+            self.insert_instanced_resource(ComponentDescriptor::new_resource::<T>())
+        }
+    }
+
     /// Initializes a [non-send resource](crate::system::NonSend) of type `T` with this instance.
     /// If a resource of this type has already been initialized, this will return
     /// the ID of the pre-existing resource.
@@ -666,6 +672,16 @@ impl Components {
             components.push(ComponentInfo::new(component_id, descriptor));
             component_id
         })
+    }
+
+    unsafe fn insert_instanced_resource(
+        &mut self,
+        desc: ComponentDescriptor,
+    ) -> ComponentId {
+        let components = &mut self.components;
+        let component_id = ComponentId(components.len());
+        components.push(ComponentInfo::new(component_id, desc));
+        component_id
     }
 
     /// Gets an iterator over all components registered with this instance.

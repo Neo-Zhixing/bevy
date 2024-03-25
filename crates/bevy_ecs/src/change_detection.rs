@@ -410,11 +410,11 @@ macro_rules! impl_debug {
 }
 
 #[derive(Clone)]
-pub(crate) struct Ticks<'w> {
-    pub(crate) added: &'w Tick,
-    pub(crate) changed: &'w Tick,
-    pub(crate) last_run: Tick,
-    pub(crate) this_run: Tick,
+pub struct Ticks<'w> {
+    pub added: &'w Tick,
+    pub changed: &'w Tick,
+    pub last_run: Tick,
+    pub this_run: Tick,
 }
 
 impl<'w> Ticks<'w> {
@@ -435,11 +435,11 @@ impl<'w> Ticks<'w> {
     }
 }
 
-pub(crate) struct TicksMut<'w> {
-    pub(crate) added: &'w mut Tick,
-    pub(crate) changed: &'w mut Tick,
-    pub(crate) last_run: Tick,
-    pub(crate) this_run: Tick,
+pub struct TicksMut<'w> {
+    pub added: &'w mut Tick,
+    pub changed: &'w mut Tick,
+    pub last_run: Tick,
+    pub this_run: Tick,
 }
 
 impl<'w> TicksMut<'w> {
@@ -800,8 +800,8 @@ impl_debug!(Mut<'w, T>,);
 /// [`Mut`], but in situations where the types are not known at compile time
 /// or are defined outside of rust this can be used.
 pub struct MutUntyped<'w> {
-    pub(crate) value: PtrMut<'w>,
-    pub(crate) ticks: TicksMut<'w>,
+    pub value: PtrMut<'w>,
+    pub ticks: TicksMut<'w>,
 }
 
 impl<'w> MutUntyped<'w> {

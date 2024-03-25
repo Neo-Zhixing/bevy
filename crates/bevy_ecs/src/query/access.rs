@@ -641,7 +641,7 @@ impl<T: SparseSetIndex> FilteredAccessSet<T> {
     }
 
     /// Adds a read access without filters to the set.
-    pub(crate) fn add_unfiltered_read(&mut self, index: T) {
+    pub fn add_unfiltered_read(&mut self, index: T) {
         let mut filter = FilteredAccess::default();
         filter.add_read(index);
         self.add(filter);

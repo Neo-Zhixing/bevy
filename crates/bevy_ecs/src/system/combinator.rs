@@ -10,6 +10,7 @@ use crate::{
     query::Access,
     schedule::InternedSystemSet,
     world::unsafe_world_cell::UnsafeWorldCell,
+    system::SystemMeta
 };
 
 use super::{ReadOnlySystem, System};

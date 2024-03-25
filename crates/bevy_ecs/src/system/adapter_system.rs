@@ -3,7 +3,7 @@ use std::{any::Any, borrow::Cow};
 use bevy_utils::ConfigMap;
 
 use super::{ReadOnlySystem, System};
-use crate::{prelude::World, schedule::InternedSystemSet, world::unsafe_world_cell::UnsafeWorldCell};
+use crate::{prelude::World, schedule::InternedSystemSet, world::unsafe_world_cell::UnsafeWorldCell, system::SystemMeta};
 
 /// Customizes the behavior of an [`AdapterSystem`]
 ///

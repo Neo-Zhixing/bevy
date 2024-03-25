@@ -10,7 +10,7 @@ use crate::{archetype::ArchetypeComponentId, component::ComponentId, query::Acce
 use std::any::{Any, TypeId};
 use std::borrow::Cow;
 
-use super::IntoSystem;
+use super::{IntoSystem, SystemMeta};
 
 /// An ECS system that can be added to a [`Schedule`](crate::schedule::Schedule)
 ///
@@ -108,7 +108,7 @@ pub trait System: Send + Sync + 'static {
     fn default_configs(&self, _config: &mut ConfigMap) {}
 
     /// Receives custom configurations from [`ScheduleBuildPass`]es.
-    fn configurate(&mut self, _config: &mut dyn Any, _world: &mut World){}
+    fn configurate(&mut self, _config: &mut dyn Any, world: &mut World){}
 
     /// Gets the tick indicating the last time this system ran.
     fn get_last_run(&self) -> Tick;

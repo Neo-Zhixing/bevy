@@ -553,7 +553,7 @@ impl<'w> UnsafeWorldCell<'w> {
     /// - the [`UnsafeWorldCell`] has permission to access the resource mutably
     /// - no mutable references to the resource exist at the same time
     #[inline]
-    pub(crate) unsafe fn get_resource_with_ticks(
+    pub unsafe fn get_resource_with_ticks(
         self,
         component_id: ComponentId,
     ) -> Option<(Ptr<'w>, TickCells<'w>)> {

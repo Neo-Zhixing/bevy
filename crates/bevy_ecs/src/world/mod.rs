@@ -28,7 +28,7 @@ use crate::{
     removal_detection::RemovedComponentEvents,
     schedule::{Schedule, ScheduleLabel, Schedules},
     storage::{ResourceData, Storages},
-    system::{Res, Resource},
+    system::{InstancedResource, Res, Resource},
     world::error::TryRunScheduleError,
 };
 use bevy_ptr::{OwningPtr, Ptr};
@@ -1071,6 +1071,10 @@ impl World {
             });
         }
         component_id
+    }
+
+    pub fn init_instanced_resource<R: InstancedResource>(&mut self) -> ComponentId {
+        self.components.init_instanced_resource::<R>()
     }
 
     /// Inserts a new resource with the given `value`.

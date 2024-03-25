@@ -554,7 +554,7 @@ where
     }
     fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
         if let Some(state) = &mut self.param_state {
-            F::Param::configurate(state, config, world);
+            F::Param::configurate(state, config, &mut self.system_meta, world);
         } else {
             warn!("System configured without being initialized first.");
         }

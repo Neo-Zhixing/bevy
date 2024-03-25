@@ -144,7 +144,7 @@ pub unsafe trait SystemParam: Sized {
 
     /// Receives information from custom render passes. Implementation may call [`Option::take`] on the config
     /// to take ownership. `set_config` will then no longer be called on other system params.
-    fn configurate(_state: &mut Self::State, _config: &mut dyn Any, _world: &mut World){}
+    fn configurate(_state: &mut Self::State, _config: &mut dyn Any, _meta: &mut SystemMeta, world: &mut World){}
 
     /// For the specified [`Archetype`], registers the components accessed by this [`SystemParam`] (if applicable).
     #[inline]
@@ -440,6 +440,7 @@ impl_param_set!();
 ///
 /// [`Exclusive`]: https://doc.rust-lang.org/nightly/std/sync/struct.Exclusive.html
 pub trait Resource: Send + Sync + 'static {}
+pub trait InstancedResource: Send + Sync + 'static {}
 
 // SAFETY: Res only reads a single World resource
 unsafe impl<'a, T: Resource> ReadOnlySystemParam for Res<'a, T> {}
@@ -1371,8 +1372,8 @@ macro_rules! impl_system_param_tuple {
                 $($param::default_configs(_default_configs);)*
             }
             #[inline]
-            fn configurate(($($param,)*): &mut Self::State, _config: &mut dyn ::std::any::Any, _world: &mut World) {
-                $($param::configurate($param, _config, _world);)*
+            fn configurate(($($param,)*): &mut Self::State, config: &mut dyn ::std::any::Any, meta: &mut SystemMeta, world: &mut World) {
+                $($param::configurate($param, config, meta, world);)*
             }
 
             #[inline]
