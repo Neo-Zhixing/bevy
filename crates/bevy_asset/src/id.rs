@@ -1,4 +1,5 @@
 use crate::{Asset, AssetIndex};
+use bevy_ecs::component::Component;
 use bevy_reflect::Reflect;
 use bevy_utils::Uuid;
 
@@ -16,7 +17,7 @@ use thiserror::Error;
 /// For an identifier tied to the lifetime of an asset, see [`Handle`](`crate::Handle`).
 ///
 /// For an "untyped" / "generic-less" id, see [`UntypedAssetId`].
-#[derive(Reflect)]
+#[derive(Reflect, Component)]
 pub enum AssetId<A: Asset> {
     /// A small / efficient runtime identifier that can be used to efficiently look up an asset stored in [`Assets`]. This is
     /// the "default" identifier used for assets. The alternative(s) (ex: [`AssetId::Uuid`]) will only be used if assets are
@@ -293,6 +294,15 @@ impl PartialOrd for UntypedAssetId {
             None
         } else {
             Some(self.internal().cmp(&other.internal()))
+        }
+    }
+}
+impl Ord for UntypedAssetId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        if self.type_id() != other.type_id() {
+            self.type_id().cmp(&other.type_id())
+        } else {
+            self.internal().cmp(&other.internal())
         }
     }
 }
