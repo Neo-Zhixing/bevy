@@ -1,4 +1,4 @@
-use crate::{self as bevy_asset};
+use crate::{self as bevy_asset, UntypedAssetId};
 use crate::{
     Asset, AssetEvent, AssetHandleProvider, AssetId, AssetServer, Handle, LoadState, UntypedHandle,
 };
@@ -302,6 +302,17 @@ impl<A: Asset> Assets<A> {
     /// Reserves a new [`Handle`] for an asset that will be stored in this collection.
     pub fn reserve_handle(&self) -> Handle<A> {
         self.handle_provider.reserve_handle().typed::<A>()
+    }
+
+    
+    /// Reserves a new [`Handle`] for an asset that will be stored in this collection.
+    pub fn reserve_asset_id(&self, id: UntypedAssetId) {
+        match id {
+            UntypedAssetId::Index { index, .. } => {
+                self.handle_provider.allocator.next_index.fetch_max(index.index + 1, std::sync::atomic::Ordering::Relaxed);
+            }
+            _ => ()
+        }
     }
 
     /// Inserts the given `asset`, identified by the given `id`. If an asset already exists for `id`, it will be replaced.
