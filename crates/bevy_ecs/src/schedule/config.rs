@@ -51,10 +51,16 @@ impl IntoSystemConfigs<()> for BoxedSystem<(), ()> {
     }
 }
 
-/// Stores configuration for a single generic node.
+/// Stores configuration for a single generic node (a system or a system set)
+///
+/// The configuration includes the node itself, scheduling metadata
+/// (hierarchy: in which sets is the node contained,
+/// dependencies: before/after which other nodes should this node run)
+/// and the run conditions associated with this node.
 pub struct NodeConfig<T> {
     pub(crate) node: T,
     pub(crate) config: ConfigMap,
+    /// Hierarchy and dependency metadata for this node
     pub(crate) graph_info: GraphInfo,
     pub(crate) conditions: Vec<BoxedCondition>,
 }
@@ -90,7 +96,7 @@ impl SystemConfigs {
             node: system,
             config,
             graph_info: GraphInfo {
-                sets,
+                hierarchy: sets,
                 ..Default::default()
             },
             conditions: Vec::new(),
@@ -103,7 +109,7 @@ impl<T> NodeConfigs<T> {
     pub fn in_set_inner(&mut self, set: InternedSystemSet) {
         match self {
             Self::NodeConfig(config) => {
-                config.graph_info.sets.push(set);
+                config.graph_info.hierarchy.push(set);
             }
             Self::Configs { configs, .. } => {
                 for config in configs {
@@ -320,6 +326,10 @@ impl<T> NodeConfigs<T> {
 ///     )
 /// );
 /// ```
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` does not describe a valid system configuration",
+    label = "invalid system configuration"
+)]
 pub trait IntoSystemConfigs<Marker>
 where
     Self: Sized,
@@ -453,7 +463,7 @@ where
     ///
     /// Ordering constraints will be applied between the successive elements.
     ///
-    /// If the preceeding node on a edge has deferred parameters, a [`apply_deferred`](crate::schedule::apply_deferred)
+    /// If the preceding node on a edge has deferred parameters, a [`apply_deferred`](crate::schedule::apply_deferred)
     /// will be inserted on the edge. If this behavior is not desired consider using
     /// [`with_chain_options`](Self::with_chain_options) to disable this behavior.
     fn chain(self) -> SystemConfigs {
@@ -593,6 +603,10 @@ impl SystemSetConfig {
 pub type SystemSetConfigs = NodeConfigs<InternedSystemSet>;
 
 /// Types that can convert into a [`SystemSetConfigs`].
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` does not describe a valid system set configuration",
+    label = "invalid system set configuration"
+)]
 pub trait IntoSystemSetConfigs
 where
     Self: Sized,

@@ -110,6 +110,7 @@ where
             );
             let out = self.func.run(world, input, params);
 
+            world.flush_commands();
             let change_tick = world.change_tick.get_mut();
             self.system_meta.last_run.set(*change_tick);
             *change_tick = change_tick.wrapping_add(1);
@@ -143,7 +144,7 @@ where
     }
 
     fn default_system_sets(&self) -> Vec<InternedSystemSet> {
-        let set = crate::schedule::SystemTypeSet::<F>::new();
+        let set = crate::schedule::SystemTypeSet::<Self>::new();
         vec![set.intern()]
     }
 
@@ -172,6 +173,10 @@ where
 ///
 /// This trait can be useful for making your own systems which accept other systems,
 /// sometimes called higher order systems.
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` is not an exclusive system",
+    label = "invalid system"
+)]
 pub trait ExclusiveSystemParamFunction<Marker>: Send + Sync + 'static {
     /// The input type to this system. See [`System::In`].
     type In;
@@ -179,7 +184,7 @@ pub trait ExclusiveSystemParamFunction<Marker>: Send + Sync + 'static {
     /// The return type of this system. See [`System::Out`].
     type Out;
 
-    /// The [`ExclusiveSystemParam`]/s defined by this system's `fn` parameters.
+    /// The [`ExclusiveSystemParam`]'s defined by this system's `fn` parameters.
     type Param: ExclusiveSystemParam;
 
     /// Executes this system once. See [`System::run`].

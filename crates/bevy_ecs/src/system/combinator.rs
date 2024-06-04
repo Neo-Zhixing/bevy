@@ -85,6 +85,11 @@ use super::{ReadOnlySystem, System};
 /// # assert!(world.resource::<RanFlag>().0);
 /// # world.resource_mut::<RanFlag>().0 = false;
 /// ```
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` can not combine systems `{A}` and `{B}`",
+    label = "invalid system combination",
+    note = "the inputs and outputs of `{A}` and `{B}` are not compatible with this combiner"
+)]
 pub trait Combine<A: System, B: System> {
     /// The [input](System::In) type for a [`CombinatorSystem`].
     type In;
@@ -173,8 +178,9 @@ where
             // in parallel, so their world accesses will not conflict with each other.
             // Additionally, `update_archetype_component_access` has been called,
             // which forwards to the implementations for `self.a` and `self.b`.
-            |input| self.a.run_unsafe(input, world),
-            |input| self.b.run_unsafe(input, world),
+            |input| unsafe { self.a.run_unsafe(input, world) },
+            // SAFETY: See the comment above.
+            |input| unsafe { self.b.run_unsafe(input, world) },
         )
     }
 

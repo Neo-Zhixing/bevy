@@ -41,6 +41,10 @@ use crate::{prelude::World, schedule::InternedSystemSet, world::unsafe_world_cel
 /// # system.initialize(&mut world);
 /// # assert!(system.run((), &mut world));
 /// ```
+#[diagnostic::on_unimplemented(
+    message = "`{Self}` can not adapt a system of type `{S}`",
+    label = "invalid system adapter"
+)]
 pub trait Adapt<S: System>: Send + Sync + 'static {
     /// The [input](System::In) type for an [`AdapterSystem`].
     type In;
@@ -109,8 +113,9 @@ where
     #[inline]
     unsafe fn run_unsafe(&mut self, input: Self::In, world: UnsafeWorldCell) -> Self::Out {
         // SAFETY: `system.run_unsafe` has the same invariants as `self.run_unsafe`.
-        self.func
-            .adapt(input, |input| self.system.run_unsafe(input, world))
+        self.func.adapt(input, |input| unsafe {
+            self.system.run_unsafe(input, world)
+        })
     }
 
     #[inline]

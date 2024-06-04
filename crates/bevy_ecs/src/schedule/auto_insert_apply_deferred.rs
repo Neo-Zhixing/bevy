@@ -1,11 +1,11 @@
 use std::collections::BTreeSet;
-
+use petgraph::{
+    graphmap::GraphMap,
+    Directed,
+    Direction::{Incoming, Outgoing},
+};
 use bevy_utils::{
-    petgraph::{
-        graphmap::GraphMap,
-        Directed,
-        Direction::{Incoming, Outgoing},
-    },
+    
     HashMap,
 };
 
