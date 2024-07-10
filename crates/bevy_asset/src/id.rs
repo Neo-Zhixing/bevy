@@ -301,15 +301,6 @@ impl PartialOrd for UntypedAssetId {
         Some(self.cmp(other))
     }
 }
-impl Ord for UntypedAssetId {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        if self.type_id() != other.type_id() {
-            self.type_id().cmp(&other.type_id())
-        } else {
-            self.internal().cmp(&other.internal())
-        }
-    }
-}
 
 /// An asset id without static or dynamic types associated with it.
 /// This exist to support efficient type erased id drop tracking. We
