@@ -454,14 +454,17 @@ struct LineGizmoUniform {
     _padding: f32,
 }
 
+/// A gizmo asset that represents a line.
 #[derive(Asset, Debug, Default, Clone, TypePath)]
-struct LineGizmo {
-    positions: Vec<Vec3>,
-    colors: Vec<LinearRgba>,
+pub struct LineGizmo {
+    /// Positions of the gizmo's vertices
+    pub positions: Vec<Vec3>,
+    /// Colors of the gizmo's vertices
+    pub colors: Vec<LinearRgba>,
     /// Whether this gizmo's topology is a line-strip or line-list
-    strip: bool,
+    pub strip: bool,
     /// Whether this gizmo should draw line joints. This is only applicable if the gizmo's topology is line-strip.
-    joints: GizmoLineJoint,
+    pub joints: GizmoLineJoint,
 }
 
 #[cfg(feature = "bevy_render")]
