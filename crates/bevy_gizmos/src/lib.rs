@@ -366,13 +366,13 @@ fn update_gizmo_meshes<Config: GizmoConfigGroup>(
             list.positions = mem::take(&mut storage.list_positions);
             list.colors = mem::take(&mut storage.list_colors);
         } else {
-            let mut list = LineGizmo {
+            let list = LineGizmo {
                 strip: false,
-                ..Default::default()
+                config_ty: TypeId::of::<Config>(),
+                positions: mem::take(&mut storage.list_positions),
+                colors: mem::take(&mut storage.list_colors),
+                joints: GizmoLineJoint::None,
             };
-
-            list.positions = mem::take(&mut storage.list_positions);
-            list.colors = mem::take(&mut storage.list_colors);
 
             *handle = Some(line_gizmos.add(list));
         }
@@ -389,14 +389,13 @@ fn update_gizmo_meshes<Config: GizmoConfigGroup>(
             strip.colors = mem::take(&mut storage.strip_colors);
             strip.joints = config.line_joints;
         } else {
-            let mut strip = LineGizmo {
+            let strip = LineGizmo {
                 strip: true,
                 joints: config.line_joints,
-                ..Default::default()
+                config_ty: TypeId::of::<Config>(),
+                positions: mem::take(&mut storage.strip_positions),
+                colors: mem::take(&mut storage.strip_colors),
             };
-
-            strip.positions = mem::take(&mut storage.strip_positions);
-            strip.colors = mem::take(&mut storage.strip_colors);
 
             *handle = Some(line_gizmos.add(strip));
         }
@@ -455,7 +454,7 @@ struct LineGizmoUniform {
 }
 
 /// A gizmo asset that represents a line.
-#[derive(Asset, Debug, Default, Clone, TypePath)]
+#[derive(Asset, Debug, Clone, TypePath)]
 pub struct LineGizmo {
     /// Positions of the gizmo's vertices
     pub positions: Vec<Vec3>,
@@ -465,6 +464,8 @@ pub struct LineGizmo {
     pub strip: bool,
     /// Whether this gizmo should draw line joints. This is only applicable if the gizmo's topology is line-strip.
     pub joints: GizmoLineJoint,
+    /// The type of the gizmo's configuration group
+    pub config_ty: TypeId,
 }
 
 #[cfg(feature = "bevy_render")]

@@ -76,7 +76,7 @@ fn prepare_globals_buffer(
     let buffer = globals_buffer.buffer.get_mut();
     buffer.time = time.elapsed_seconds_wrapped();
     buffer.delta_time = time.delta_seconds();
-    buffer.frame_count = frame_count.0;
+    buffer.frame_count = frame_count.0 as u32;
 
     globals_buffer
         .buffer
