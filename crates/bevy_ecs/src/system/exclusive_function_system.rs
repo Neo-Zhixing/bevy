@@ -155,8 +155,8 @@ where
         vec![set.intern()]
     }
 
-    fn default_configs(&self, config: &mut bevy_utils::ConfigMap) {
-        F::Param::default_configs(config);
+    fn default_configs(&mut self, config: &mut bevy_utils::ConfigMap) {
+        F::Param::default_configs(self.param_state.as_mut().expect("When `default_configs` was called, the system should have been initialized."), config);
     }
 
     fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {

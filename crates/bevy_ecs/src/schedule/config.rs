@@ -87,7 +87,7 @@ pub enum NodeConfigs<T> {
 pub type SystemConfigs = NodeConfigs<BoxedSystem>;
 
 impl SystemConfigs {
-    fn new_system(system: BoxedSystem) -> Self {
+    fn new_system(mut system: BoxedSystem) -> Self {
         // include system in its default sets
         let sets = system.default_system_sets().into_iter().collect();
         let mut config = ConfigMap::new();

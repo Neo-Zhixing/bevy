@@ -599,8 +599,8 @@ where
         vec![set.intern()]
     }
 
-    fn default_configs(&self, configs: &mut ConfigMap) {
-        F::Param::default_configs(configs);
+    fn default_configs(&mut self, configs: &mut ConfigMap) {
+        F::Param::default_configs(self.param_state.as_mut().expect("When `default_configs` was called, the system should have been initialized."), configs);
     }
     fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
         if let Some(state) = &mut self.param_state {

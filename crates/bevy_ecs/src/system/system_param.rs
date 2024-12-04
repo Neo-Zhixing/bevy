@@ -141,7 +141,7 @@ pub unsafe trait SystemParam: Sized {
     fn init_state(world: &mut World, system_meta: &mut SystemMeta) -> Self::State;
 
     /// Registers any additional configurations on the systems using this [`SystemParam`].
-    fn default_configs(_config: &mut ConfigMap){}
+    fn default_configs(_state: &mut Self::State, _config: &mut ConfigMap){}
 
     /// Receives information from custom render passes. Implementation may call [`Option::take`] on the config
     /// to take ownership. `set_config` will then no longer be called on other system params.
@@ -1455,12 +1455,13 @@ macro_rules! impl_system_param_tuple {
             }
 
             #[inline]
-            fn default_configs(_default_configs: &mut ConfigMap) {
-                $($param::default_configs(_default_configs);)*
+            fn default_configs(_state: &mut Self::State, _default_configs: &mut ConfigMap) {
+                let ($($param,)*) = _state;
+                $($param::default_configs($param, _default_configs);)*
             }
             #[inline]
-            fn configurate(($($param,)*): &mut Self::State, config: &mut dyn ::std::any::Any, meta: &mut SystemMeta, world: &mut World) {
-                $($param::configurate($param, config, meta, world);)*
+            fn configurate(($($param,)*): &mut Self::State, _config: &mut dyn ::std::any::Any, _meta: &mut SystemMeta, _world: &mut World) {
+                $($param::configurate($param, _config, _meta, _world);)*
             }
 
             #[inline]

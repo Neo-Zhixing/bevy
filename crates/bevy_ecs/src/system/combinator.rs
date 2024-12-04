@@ -237,7 +237,7 @@ where
         default_sets.append(&mut self.b.default_system_sets());
         default_sets
     }
-    fn default_configs(&self, config: &mut ConfigMap) {
+    fn default_configs(&mut self, config: &mut ConfigMap) {
         self.a.default_configs(config);
         self.b.default_configs(config);
     }

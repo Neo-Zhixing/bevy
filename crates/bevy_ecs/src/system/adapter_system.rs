@@ -151,7 +151,7 @@ where
         self.system.default_system_sets()
     }
 
-    fn default_configs(&self, configs: &mut ConfigMap) {
+    fn default_configs(&mut self, configs: &mut ConfigMap) {
         self.system.default_configs(configs);
     }
     fn configurate(&mut self, config: &mut dyn Any, world: &mut World) {
