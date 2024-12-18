@@ -593,7 +593,7 @@ impl SystemSetNode {
 
 /// A [`BoxedSystem`] with metadata, stored in a [`ScheduleGraph`].
 pub struct SystemNode {
-    inner: Option<BoxedSystem>,
+    pub inner: Option<BoxedSystem>,
     /// Custom configurations associated with this system.
     pub config: ConfigMap,
 }
@@ -1081,7 +1081,11 @@ impl ScheduleGraph {
         for (id, i) in self.uninit.drain(..) {
             match id {
                 NodeId::System(index) => {
-                    self.systems[index].get_mut().unwrap().initialize(world);
+                    let system_node = &mut self.systems[index];
+                    let system  = system_node.inner.as_mut().unwrap();
+                    system.initialize(world);
+                    system.default_configs(&mut system_node.config);
+
                     for condition in &mut self.system_conditions[index] {
                         condition.initialize(world);
                     }

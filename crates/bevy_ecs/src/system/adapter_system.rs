@@ -165,6 +165,10 @@ where
     fn set_last_run(&mut self, last_run: crate::component::Tick) {
         self.system.set_last_run(last_run);
     }
+
+    fn yielded(&self) -> bool {
+        self.system.yielded()
+    }
 }
 
 // SAFETY: The inner system is read-only.
@@ -187,3 +191,8 @@ where
         self(run_system(input))
     }
 }
+
+
+// An ECS approach to resource syncronization
+// ECS scheduler will schedule in each of the systems based on their resource usages.
+// 

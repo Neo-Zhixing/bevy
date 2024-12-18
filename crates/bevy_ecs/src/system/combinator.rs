@@ -1,3 +1,4 @@
+use core::panic;
 use std::{any::Any, borrow::Cow, cell::UnsafeCell, marker::PhantomData};
 
 use bevy_ptr::UnsafeCellDeref;
@@ -253,6 +254,15 @@ where
     fn set_last_run(&mut self, last_run: Tick) {
         self.a.set_last_run(last_run);
         self.b.set_last_run(last_run);
+    }
+
+    fn yielded(&self) -> bool {
+        let a_yielded = self.a.yielded();
+        let b_yielded = self.b.yielded();
+        if a_yielded != b_yielded {
+            panic!("Fo now, systems in combinator system must decide to yield at the same time.");
+        }
+        a_yielded
     }
 }
 

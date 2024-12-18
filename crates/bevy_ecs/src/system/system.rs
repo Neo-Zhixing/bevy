@@ -135,6 +135,10 @@ pub trait System: Send + Sync + 'static {
     /// However, it can be an essential escape hatch when, for example,
     /// you are trying to synchronize representations using change detection and need to avoid infinite recursion.
     fn set_last_run(&mut self, last_run: Tick);
+
+    fn yielded(&self) -> bool {
+        false
+    }
 }
 
 /// [`System`] types that do not modify the [`World`] when run.
