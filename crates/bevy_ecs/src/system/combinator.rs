@@ -224,6 +224,11 @@ where
         self.component_access.extend(self.b.component_access());
     }
 
+    fn configurate(&mut self, config: &mut dyn core::any::Any) {
+        self.a.configurate(config);
+        self.b.configurate(config);
+    }
+
     fn update_archetype_component_access(&mut self, world: UnsafeWorldCell) {
         self.a.update_archetype_component_access(world);
         self.b.update_archetype_component_access(world);
@@ -445,6 +450,11 @@ where
         self.b.initialize(world);
         self.component_access.extend(self.a.component_access());
         self.component_access.extend(self.b.component_access());
+    }
+
+    fn configurate(&mut self, config: &mut dyn core::any::Any) {
+        self.a.configurate(config);
+        self.b.configurate(config);
     }
 
     fn update_archetype_component_access(&mut self, world: UnsafeWorldCell) {
