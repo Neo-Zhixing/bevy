@@ -912,14 +912,40 @@ impl AssetServer {
     ) -> Handle<A> {
         let mut infos = self.data.infos.write();
         let handle =
-            infos.create_loading_handle_untyped(TypeId::of::<A>(), core::any::type_name::<A>());
+            infos.create_loading_handle_untyped(TypeId::of::<A>(), core::any::type_name::<A>()).typed_debug_checked();
+        self.update_async_internal(handle.id().untyped(), future);
+        handle
+    }
 
-        // drop the lock on `AssetInfos` before spawning a task that may block on it in single-threaded
-        #[cfg(any(target_arch = "wasm32", not(feature = "multi_threaded")))]
-        drop(infos);
+    pub fn update_async<A: Asset, E: core::error::Error + Send + Sync + 'static>(
+        &self,
+        handle: &Handle<A>,
+        future: impl Future<Output = Result<A, E>> + Send + 'static,
+    ) {
+        let handle = match handle {
+            Handle::Strong(strong_handle) => strong_handle,
+            _ => panic!("Handle must be strong!")
+        };
+        {
+            let mut infos = self.data.infos.write();
 
-        let id = handle.id();
+            infos.infos.entry(handle.id).or_insert_with(|| {
+                let mut info = AssetInfo::new(Arc::downgrade(handle), None);
+                info.load_state = LoadState::Loading;
+                info.dep_load_state = DependencyLoadState::Loading;
+                info.rec_dep_load_state = RecursiveDependencyLoadState::Loading;
+                info
+            });
+            drop(infos); // Make sure infos is dropped immediately
+        }
+        self.update_async_internal(handle.id, future);
+    }
 
+    fn update_async_internal<A: Asset, E: core::error::Error + Send + Sync + 'static>(
+        &self,
+        id: UntypedAssetId,
+        future: impl Future<Output = Result<A, E>> + Send + 'static,
+    ) {
         let event_sender = self.data.asset_event_sender.clone();
 
         let task = IoTaskPool::get().spawn(async move {
@@ -947,12 +973,13 @@ impl AssetServer {
         });
 
         #[cfg(not(any(target_arch = "wasm32", not(feature = "multi_threaded"))))]
-        infos.pending_tasks.insert(id, task);
+        {
+            let mut infos = self.data.infos.write();
+            infos.pending_tasks.insert(id, task);
+        }
 
         #[cfg(any(target_arch = "wasm32", not(feature = "multi_threaded")))]
         task.detach();
-
-        handle.typed_debug_checked()
     }
 
     /// Loads all assets from the specified folder recursively. The [`LoadedFolder`] asset (when it loads) will
