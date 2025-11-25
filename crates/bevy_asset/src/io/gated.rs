@@ -1,6 +1,7 @@
 use crate::io::{AssetReader, AssetReaderError, PathStream, Reader};
 use alloc::{boxed::Box, sync::Arc};
 use async_channel::{Receiver, Sender};
+use atomicow::CowArc;
 use bevy_platform::collections::HashMap;
 use parking_lot::RwLock;
 use std::path::Path;
@@ -56,7 +57,10 @@ impl<R: AssetReader> GatedReader<R> {
 }
 
 impl<R: AssetReader> AssetReader for GatedReader<R> {
-    async fn read<'a>(&'a self, path: &'a Path) -> Result<impl Reader + 'a, AssetReaderError> {
+    async fn read<'a>(
+        &'a self,
+        path: CowArc<'a, Path>,
+    ) -> Result<impl Reader + 'a, AssetReaderError> {
         let receiver = {
             let mut gates = self.gates.write();
             let gates = gates
@@ -69,7 +73,10 @@ impl<R: AssetReader> AssetReader for GatedReader<R> {
         Ok(result)
     }
 
-    async fn read_meta<'a>(&'a self, path: &'a Path) -> Result<impl Reader + 'a, AssetReaderError> {
+    async fn read_meta<'a>(
+        &'a self,
+        path: CowArc<'a, Path>,
+    ) -> Result<impl Reader + 'a, AssetReaderError> {
         self.reader.read_meta(path).await
     }
 

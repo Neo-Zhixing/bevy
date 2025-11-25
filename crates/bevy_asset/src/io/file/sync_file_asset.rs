@@ -5,6 +5,7 @@ use crate::io::{
     get_meta_path, AssetReader, AssetReaderError, AssetWriter, AssetWriterError, AsyncSeekForward,
     PathStream, Reader, Writer,
 };
+use atomicow::CowArc;
 
 use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 use core::{pin::Pin, task::Poll};
@@ -99,7 +100,10 @@ impl Stream for DirReader {
 }
 
 impl AssetReader for FileAssetReader {
-    async fn read<'a>(&'a self, path: &'a Path) -> Result<impl Reader + 'a, AssetReaderError> {
+    async fn read<'a>(
+        &'a self,
+        path: CowArc<'a, Path>,
+    ) -> Result<impl Reader + 'a, AssetReaderError> {
         let full_path = self.root_path.join(path);
         match File::open(&full_path) {
             Ok(file) => Ok(FileReader(file)),
@@ -113,8 +117,11 @@ impl AssetReader for FileAssetReader {
         }
     }
 
-    async fn read_meta<'a>(&'a self, path: &'a Path) -> Result<impl Reader + 'a, AssetReaderError> {
-        let meta_path = get_meta_path(path);
+    async fn read_meta<'a>(
+        &'a self,
+        path: CowArc<'a, Path>,
+    ) -> Result<impl Reader + 'a, AssetReaderError> {
+        let meta_path = get_meta_path(&path);
         let full_path = self.root_path.join(meta_path);
         match File::open(&full_path) {
             Ok(file) => Ok(FileReader(file)),

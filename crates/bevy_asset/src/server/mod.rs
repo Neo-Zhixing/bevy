@@ -1387,7 +1387,7 @@ impl AssetServer {
             AssetServerMode::Unprocessed => source.reader(),
             AssetServerMode::Processed => source.processed_reader()?,
         };
-        let reader = asset_reader.read(asset_path.path()).await?;
+        let reader = asset_reader.read(asset_path.path_cow()).await?;
         let read_meta = match &self.data.meta_check {
             AssetMetaCheck::Always => true,
             AssetMetaCheck::Paths(paths) => paths.contains(asset_path),
@@ -1395,7 +1395,7 @@ impl AssetServer {
         };
 
         if read_meta {
-            match asset_reader.read_meta_bytes(asset_path.path()).await {
+            match asset_reader.read_meta_bytes(asset_path.path_cow()).await {
                 Ok(meta_bytes) => {
                     // TODO: this isn't fully minimal yet. we only need the loader
                     let minimal: AssetMetaMinimal =
@@ -1651,7 +1651,7 @@ impl AssetServer {
         let source = self.get_source(path.source())?;
 
         let reader = source.reader();
-        match reader.read_meta_bytes(path.path()).await {
+        match reader.read_meta_bytes(path.path_cow()).await {
             Ok(_) => return Err(WriteDefaultMetaError::MetaAlreadyExists),
             Err(AssetReaderError::NotFound(_)) => {
                 // The meta file couldn't be found so just fall through.

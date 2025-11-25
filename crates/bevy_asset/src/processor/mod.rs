@@ -293,7 +293,7 @@ impl AssetProcessor {
         // file for the unprocessed version of that asset (so it will be processed by the default
         // processor).
         let reader = source.reader();
-        match reader.read_meta_bytes(path.path()).await {
+        match reader.read_meta_bytes(path.path_cow()).await {
             Ok(_) => return Err(WriteDefaultMetaError::MetaAlreadyExists),
             Err(AssetReaderError::NotFound(_)) => {
                 // The meta file couldn't be found so just fall through.
@@ -691,7 +691,10 @@ impl AssetProcessor {
                 let mut dependencies = Vec::new();
                 let asset_path = AssetPath::from(path).with_source(source.id());
                 if let Some(info) = asset_infos.get_mut(&asset_path) {
-                    match processed_reader.read_meta_bytes(asset_path.path()).await {
+                    match processed_reader
+                        .read_meta_bytes(asset_path.path_cow())
+                        .await
+                    {
                         Ok(meta_bytes) => {
                             match ron::de::from_bytes::<ProcessedInfoMinimal>(&meta_bytes) {
                                 Ok(minimal) => {
@@ -800,7 +803,7 @@ impl AssetProcessor {
         // TODO: check if already processing to protect against duplicate hot-reload events
         debug!("Processing {}", asset_path);
         let server = &self.server;
-        let path = asset_path.path();
+        let path = asset_path.path_cow();
         let reader = source.reader();
 
         let reader_err = |err| ProcessError::AssetReaderError {
@@ -813,9 +816,12 @@ impl AssetProcessor {
         };
 
         // Note: we get the asset source reader first because we don't want to create meta files for assets that don't have source files
-        let mut byte_reader = reader.read(path).await.map_err(reader_err)?;
+        let mut byte_reader = reader.read(path.clone()).await.map_err(reader_err)?;
 
-        let (mut source_meta, meta_bytes, processor) = match reader.read_meta_bytes(path).await {
+        let (mut source_meta, meta_bytes, processor) = match reader
+            .read_meta_bytes(path.clone())
+            .await
+        {
             Ok(meta_bytes) => {
                 let minimal: AssetMetaMinimal = ron::de::from_bytes(&meta_bytes).map_err(|e| {
                     ProcessError::DeserializeMetaError(DeserializeMetaError::DeserializeMinimal(e))
@@ -924,7 +930,7 @@ impl AssetProcessor {
         // TODO: this class of failure can be recovered via re-processing + smarter log validation that allows for duplicate transactions in the event of failures
         self.log_begin_processing(asset_path).await;
         if let Some(processor) = processor {
-            let mut writer = processed_writer.write(path).await.map_err(writer_err)?;
+            let mut writer = processed_writer.write(&path).await.map_err(writer_err)?;
             let mut processed_meta = {
                 let mut context =
                     ProcessContext::new(self, asset_path, &asset_bytes, &mut new_processed_info);
@@ -952,18 +958,18 @@ impl AssetProcessor {
             *processed_meta.processed_info_mut() = Some(new_processed_info.clone());
             let meta_bytes = processed_meta.serialize();
             processed_writer
-                .write_meta_bytes(path, &meta_bytes)
+                .write_meta_bytes(&path, &meta_bytes)
                 .await
                 .map_err(writer_err)?;
         } else {
             processed_writer
-                .write_bytes(path, &asset_bytes)
+                .write_bytes(&path, &asset_bytes)
                 .await
                 .map_err(writer_err)?;
             *source_meta.processed_info_mut() = Some(new_processed_info.clone());
             let meta_bytes = source_meta.serialize();
             processed_writer
-                .write_meta_bytes(path, &meta_bytes)
+                .write_meta_bytes(&path, &meta_bytes)
                 .await
                 .map_err(writer_err)?;
         }
